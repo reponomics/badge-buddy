@@ -1,6 +1,6 @@
 # Verifying a release
 
-A Badge Buddy release is a git tag named `v<version>` on the `main` branch. The tag is annotated and cryptographically signed by a maintainer, and it has a GitHub release that carries the release notes. GitHub release immutability is enabled, so a published tag cannot be moved or deleted.
+A Badge Buddy release is a git tag named `badge-buddy--v<version>` pointing to a commit in the `main` branch history. The tag is annotated and cryptographically signed by a maintainer, and it has a GitHub release that carries the release notes. Maintainers must enable GitHub release immutability before publishing; the verification steps below check that the published release is immutable.
 
 Claude Code installs a plugin by cloning its repository and does not check signatures. The checks on this page use git with GnuPG or OpenSSH, and none of them depends on Claude Code.
 
@@ -8,10 +8,10 @@ An install that follows `main` gets reviewed code but is not tied to a release. 
 
 ## Install a specific release
 
-Replace `v1.2.3` with the release you want:
+Replace `badge-buddy--v1.2.3` with the release you want:
 
 ```bash
-claude plugin marketplace add 'reponomics/badge-buddy#v1.2.3'
+claude plugin marketplace add 'reponomics/badge-buddy#badge-buddy--v1.2.3'
 ```
 
 ```bash
@@ -21,6 +21,14 @@ claude plugin install badge-buddy@badge-buddy
 A pinned install stays on that release; updating the plugin does not move it. To move to a newer release, register the marketplace at the newer tag. If your version of Claude Code needs the old registration removed first, be aware that removing a marketplace also uninstalls its plugins.
 
 ## Release keys
+
+The current release signer is **Really Him ([hesreallyhim](https://github.com/hesreallyhim)), `git-dev@hesreallyhim.com`**, using this OpenPGP primary-key fingerprint:
+
+```text
+BA1F 75AD 253C F32E 8C4D E9E9 8339 CEC9 D2C1 2CB2
+```
+
+Download the public key from [signing-keys.asc](signing-keys.asc). The same key is published in the maintainer's [GitHub public-key bundle](https://github.com/hesreallyhim.gpg), which may contain other keys that are not authorized to sign Badge Buddy releases. Compare the full fingerprint above, not just the name or email address.
 
 The public keys that may sign a release are published in this repository's `main` branch, in `docs/release/`:
 
@@ -46,7 +54,7 @@ git clone https://github.com/reponomics/badge-buddy.git
 ```
 
 ```bash
-cd badge-buddy && git fetch origin 'refs/tags/v1.2.3:refs/tags/v1.2.3'
+cd badge-buddy && git fetch origin 'refs/tags/badge-buddy--v1.2.3:refs/tags/badge-buddy--v1.2.3'
 ```
 
 For a tag signed with an OpenPGP key, import the release keys and verify:
@@ -56,13 +64,13 @@ gpg --import docs/release/signing-keys.asc
 ```
 
 ```bash
-git verify-tag v1.2.3
+git verify-tag badge-buddy--v1.2.3
 ```
 
 For a tag signed with an SSH key:
 
 ```bash
-git -c gpg.ssh.allowedSignersFile=docs/release/allowed_signers verify-tag v1.2.3
+git -c gpg.ssh.allowedSignersFile=docs/release/allowed_signers verify-tag badge-buddy--v1.2.3
 ```
 
 A good result names the signer and reports a good signature. Take the keys from `main`, as above, and not from the tag you are checking.
@@ -72,11 +80,11 @@ A good result names the signer and reports a good signature. Take the keys from 
 With the [GitHub CLI](https://cli.github.com/), confirm that the release is immutable and which commit it names:
 
 ```bash
-gh release verify v1.2.3 --repo reponomics/badge-buddy
+gh release verify badge-buddy--v1.2.3 --repo reponomics/badge-buddy
 ```
 
 ```bash
-git rev-parse 'v1.2.3^{commit}'
+git rev-parse 'badge-buddy--v1.2.3^{commit}'
 ```
 
 The commit that `git rev-parse` prints is the one the signed tag points at.
@@ -94,7 +102,7 @@ claude plugin list --json
 Then, from your clone:
 
 ```bash
-git switch --detach v1.2.3
+git switch --detach badge-buddy--v1.2.3
 ```
 
 ```bash

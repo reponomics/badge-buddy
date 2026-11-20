@@ -1,10 +1,10 @@
 name: Release
 
-# A maintainer signs and pushes a tag named v<version>. This workflow checks the tag and
+# A maintainer signs and pushes a tag named badge-buddy--v<version>. This workflow checks the tag and
 # publishes the GitHub release; it never creates or signs a tag itself.
 on:
   push:
-    tags: ['v[0-9]*']
+    tags: ['badge-buddy--v[0-9]*']
 
 permissions:
   contents: read
@@ -70,8 +70,10 @@ jobs:
           name: release-notes
       - name: Publish the release for the existing tag
         run: |
-          flags=(--verify-tag --title "Badge Buddy ${TAG#v}" --notes-file release-notes.md)
-          case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+          VERSION="${TAG#badge-buddy--v}"
+          flags=(--verify-tag --title "Badge Buddy ${VERSION}" --notes-file release-notes.md)
+          # Only a prerelease suffix counts; plugin names and build metadata may contain hyphens.
+          case "${VERSION%%+*}" in *-*) flags+=(--prerelease) ;; esac
           gh release create "$TAG" "${flags[@]}"
       - name: Confirm the release is immutable
         # Immutable releases are a repository setting. With it on, the tag cannot be moved or deleted.

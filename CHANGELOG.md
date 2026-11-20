@@ -1,10 +1,16 @@
 # Changelog
 
-Notable changes to Badge Buddy, newest first. Versions follow [Semantic Versioning](https://semver.org/). Each released version has a signed tag; see [verifying a release](docs/release/verification.md).
+Notable changes to Badge Buddy, newest first. Versions follow [Semantic Versioning](https://semver.org/). Standalone releases use signed tags; see [verifying a release](docs/release/verification.md).
 
 ## [Unreleased]
 
+## [0.4.0-beta.1] - 2026-11-19
+
 Badge Buddy now lives in its own repository and is its own plugin marketplace. Versions up to 0.3.0-beta.1 were published from the `reponomics/plugins` marketplace.
+
+### Added
+
+- A signed-tag release workflow and independent verification instructions. Standalone release tags use Claude Code's `badge-buddy--v<version>` convention; the workflow checks the authorized signer, manifest version, changelog, and release commit before publishing.
 
 ### Changed
 
@@ -24,6 +30,7 @@ Badge Buddy now lives in its own repository and is its own plugin marketplace. V
 - Preview justifications containing literal template markers now display correctly instead of breaking the board.
 - On macOS and Linux, preview timeouts and failures stop both the MCP launcher and its server child, preventing a stalled child from keeping the renderer blocked.
 - The badge skill and its peer reviewer explicitly treat instructions embedded in project evidence or criterion resources as untrusted content.
+- Test coverage includes Python subprocesses used by the board renderer. Offline browser regressions and isolated tests against the pinned MCP server cover the installation's supporting components.
 
 ### Breaking changes
 
