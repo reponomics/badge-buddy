@@ -6,6 +6,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import textwrap
 import unittest
 import unittest.mock
 from pathlib import Path
@@ -42,7 +43,7 @@ class Repository:
     ) -> None:
         manifest = self.path / release_check.MANIFEST
         manifest.parent.mkdir(exist_ok=True)
-        manifest.write_text(json.dumps({"name": "plugin", "version": version}))
+        manifest.write_text(json.dumps({"name": "badge-buddy", "version": version}))
         (self.path / release_check.MCP_REQUIREMENTS).write_text(
             f"# The server.\n{pin}\n"
         )
@@ -105,29 +106,45 @@ class TagTest(ScratchRepositoryTest):
 
     def test_a_matching_annotated_tag_on_main_yields_its_changelog_entry(self) -> None:
         self.release_commit()
-        self.annotate("v2.3.4")
-        self.assertEqual(([], self.NOTES), self.repo.check("v2.3.4"))
+        self.annotate("badge-buddy--v2.3.4")
+        self.assertEqual(([], self.NOTES), self.repo.check("badge-buddy--v2.3.4"))
+
+    def test_a_beta_tag_can_refer_to_an_earlier_commit_on_main(self) -> None:
+        self.release_commit("0.4.0-beta.1")
+        self.annotate("badge-buddy--v0.4.0-beta.1")
+        self.release_commit("0.4.0-beta.2")
+        self.assertEqual(
+            ([], self.NOTES), self.repo.check("badge-buddy--v0.4.0-beta.1")
+        )
+
+    def test_legacy_and_other_plugin_tag_names_are_rejected(self) -> None:
+        self.release_commit()
+        for tag in ("v2.3.4", "other-plugin--v2.3.4"):
+            with self.subTest(tag=tag):
+                self.annotate(tag)
+                [problem], _ = self.repo.check(tag)
+                self.assertIn("expected the tag badge-buddy--v2.3.4", problem)
 
     def test_problems_are_reported_for_tags_that_do_not_qualify(self) -> None:
         self.release_commit()
-        self.repo.git("tag", "v2.3.4")  # lightweight
-        self.annotate("v9.9.9")  # not the plugin's version
+        self.repo.git("tag", "badge-buddy--v2.3.4")  # lightweight
+        self.annotate("badge-buddy--v9.9.9")  # not the plugin's version
         self.repo.git("switch", "--quiet", "--create", "side")
         self.repo.commit(version="3.0.0", changelog="## 3.0.0\n\nNotes.\n")
-        self.annotate("v3.0.0")  # not on main
+        self.annotate("badge-buddy--v3.0.0")  # not on main
         self.repo.git("switch", "--quiet", "main")
         self.repo.commit(version="4.0.0", changelog="## [3.9.9]\n\nAnother version.\n")
-        self.annotate("v4.0.0")  # no changelog entry
+        self.annotate("badge-buddy--v4.0.0")  # no changelog entry
         self.repo.commit(version="5.0", changelog="## 5.0\n\nNotes.\n")
-        self.annotate("v5.0")  # not a semantic version
+        self.annotate("badge-buddy--v5.0")  # not a semantic version
 
         for tag, expected in (
-            ("v2.3.4", "lightweight"),
-            ("v9.9.9", "expected the tag v2.3.4"),
-            ("v3.0.0", "is not on main"),
-            ("v4.0.0", "no entry for 4.0.0"),
-            ("v5.0", "no semantic version"),
-            ("v0.0.0", "no tag named"),
+            ("badge-buddy--v2.3.4", "lightweight"),
+            ("badge-buddy--v9.9.9", "expected the tag badge-buddy--v2.3.4"),
+            ("badge-buddy--v3.0.0", "is not on main"),
+            ("badge-buddy--v4.0.0", "no entry for 4.0.0"),
+            ("badge-buddy--v5.0", "no semantic version"),
+            ("badge-buddy--v0.0.0", "no tag named"),
         ):
             with self.subTest(tag=tag):
                 problems, _ = self.repo.check(tag)
@@ -143,8 +160,56 @@ class TagTest(ScratchRepositoryTest):
         )
 
     def test_prerelease_versions_are_recognized(self) -> None:
-        self.assertTrue(release_check.is_prerelease("v1.0.0-beta.1"))
-        self.assertFalse(release_check.is_prerelease("v1.0.0"))
+        for tag, expected in (
+            ("badge-buddy--v0.4.0-beta.1", True),
+            ("badge-buddy--v1.0.0-beta.1+build-2", True),
+            ("badge-buddy--v1.0.0", False),
+            ("badge-buddy--v1.0.0+build-2", False),
+            ("badge-buddy--v1.0", False),
+            ("v1.0.0-beta.1", False),
+            ("other-plugin--v1.0.0-beta.1", False),
+        ):
+            with self.subTest(tag=tag):
+                self.assertEqual(expected, release_check.is_prerelease(tag))
+
+
+class PublishWorkflowTest(unittest.TestCase):
+    def test_publish_step_uses_version_for_title_and_prerelease_flag(self) -> None:
+        workflow = (ROOT / ".github/workflows/release.yml").read_text()
+        step = workflow.split(
+            "      - name: Publish the release for the existing tag\n", 1
+        )[1].split("      - name:", 1)[0]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+        # Run the actual workflow shell, replacing gh so no release can be created.
+        capture = "gh() { printf '%s\\0' \"$@\"; }\n"
+        for version, prerelease in (
+            ("1.0.0", False),
+            ("0.4.0-beta.1", True),
+            ("1.0.0+build-2", False),
+            ("1.0.0-beta.1+build-2", True),
+        ):
+            with self.subTest(version=version):
+                tag = f"badge-buddy--v{version}"
+                result = subprocess.run(
+                    ["bash", "-eu", "-c", capture + script],
+                    env={**ISOLATED, "TAG": tag},
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                expected = [
+                    "release",
+                    "create",
+                    tag,
+                    "--verify-tag",
+                    "--title",
+                    f"Badge Buddy {version}",
+                    "--notes-file",
+                    "release-notes.md",
+                ]
+                if prerelease:
+                    expected.append("--prerelease")
+                self.assertEqual(expected, result.stdout.rstrip("\0").split("\0"))
 
 
 class SignatureTest(ScratchRepositoryTest):
@@ -164,13 +229,19 @@ class SignatureTest(ScratchRepositoryTest):
 
     def problems(self, keys: Path | None = None) -> list[str]:
         found, _ = self.repo.check(
-            "v1.2.3", require_signature=True, keys=keys or self.keys
+            "badge-buddy--v1.2.3", require_signature=True, keys=keys or self.keys
         )
         return found
 
     def sign(self, *options: str, env: dict | None = None) -> None:
         self.repo.git(
-            *options, "tag", "--sign", "--message", "v1.2.3", "v1.2.3", env=env
+            *options,
+            "tag",
+            "--sign",
+            "--message",
+            "badge-buddy--v1.2.3",
+            "badge-buddy--v1.2.3",
+            env=env,
         )
 
     def openpgp_key(self, name: str) -> tuple[dict, bytes]:
@@ -255,14 +326,20 @@ class SignatureTest(ScratchRepositoryTest):
         self.repo.git("config", "gpg.ssh.allowedSignersFile", str(ambient))
         # This tag really is accepted by the ambient configuration, but its key
         # is absent from the project's published release keys.
-        self.repo.git("verify-tag", "v1.2.3")
+        self.repo.git("verify-tag", "badge-buddy--v1.2.3")
         [problem] = self.problems()
         self.assertIn("valid signature from a published release key", problem)
         (self.keys / release_check.SSH_SIGNERS).write_text(signer)
         self.assertEqual([], self.problems())
 
     def test_a_signature_is_required_and_needs_published_keys(self) -> None:
-        self.repo.git("tag", "--annotate", "--message", "v1.2.3", "v1.2.3")
+        self.repo.git(
+            "tag",
+            "--annotate",
+            "--message",
+            "badge-buddy--v1.2.3",
+            "badge-buddy--v1.2.3",
+        )
         [no_keys] = self.problems()
         self.assertIn("No release keys are published", no_keys)
         (self.keys / release_check.SSH_SIGNERS).write_text(self.ssh_key()[1])

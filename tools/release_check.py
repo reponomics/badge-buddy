@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ".claude-plugin/plugin.json"
 MCP_REQUIREMENTS = "requirements-mcp.txt"
 CHANGELOG = "CHANGELOG.md"
+TAG_PREFIX = "badge-buddy--v"
 # Public keys that may sign a release tag, read from the checkout this script runs in.
 RELEASE_KEYS = ROOT / "docs" / "release"
 OPENPGP_KEYS = "signing-keys.asc"
@@ -214,9 +215,10 @@ def check_tag(
     version = plugin_version(commit, cwd=cwd)
     if version is None or not SEMVER.fullmatch(version):
         problems.append(f"{MANIFEST} at {tag} has no semantic version: {version!r}.")
-    elif tag != f"v{version}":
+    elif tag != f"{TAG_PREFIX}{version}":
         problems.append(
-            f"Tag {tag} points at plugin version {version}; expected the tag v{version}."
+            f"Tag {tag} points at plugin version {version}; "
+            f"expected the tag {TAG_PREFIX}{version}."
         )
 
     on_main = subprocess.run(  # noqa: S603
@@ -236,7 +238,9 @@ def check_tag(
 
 
 def is_prerelease(tag: str) -> bool:
-    match = SEMVER.fullmatch(tag.removeprefix("v"))
+    if not tag.startswith(TAG_PREFIX):
+        return False
+    match = SEMVER.fullmatch(tag.removeprefix(TAG_PREFIX))
     return bool(match and match.group(4))
 
 
