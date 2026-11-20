@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "bestpractices": {
+      "command": "uvx",
+      "args": ["--from", "best-practices-mcp==0.7.0", "bestpractices-mcp"]
+    }
+  }
+}

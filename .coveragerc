@@ -1,0 +1,13 @@
+[run]
+branch = True
+parallel = True
+patch = subprocess
+source =
+    scripts
+    tools
+
+[report]
+# This report displays combined coverage. tools/check_coverage.py enforces
+# separate statement and branch floors. Python subprocess data is combined first.
+show_missing = True
+skip_covered = True

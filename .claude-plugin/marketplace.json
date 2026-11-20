@@ -1,0 +1,14 @@
+{
+  "name": "badge-buddy",
+  "description": "Badge Buddy: an unofficial guide and implementation assistant for OpenSSF Best Practices and Scorecard",
+  "owner": {
+    "name": "Reponomics",
+    "url": "https://reponomics.org"
+  },
+  "plugins": [
+    {
+      "name": "badge-buddy",
+      "source": "./"
+    }
+  ]
+}

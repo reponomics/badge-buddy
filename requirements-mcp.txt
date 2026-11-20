@@ -1,0 +1,2 @@
+# The MCP server the plugin starts. .mcp.json must name the same exact version.
+best-practices-mcp==0.7.0

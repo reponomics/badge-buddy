@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Lint, tests and coverage (Python ${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # The pin check compares this change with the commit it is based on.
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Check formatting and lint, run tests with the coverage floor, compile sources
+        run: make check PYTHON=python
+      - name: Require a plugin version change when the MCP pin changes
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python tools/release_check.py pin-bump --base "$BASE_SHA"
+
+  plugin-validate:
+    name: Validate the plugin and review board
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - name: Install pinned CI tools without running install scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: .github/ci
+      - name: Validate the plugin and marketplace manifests
+        # The platform package holds the executable; calling it directly needs no install script.
+        run: .github/ci/node_modules/@anthropic-ai/claude-code-linux-x64/claude plugin validate --strict .
+      - name: Install Chromium and its system dependencies
+        run: make setup-board-browser PLAYWRIGHT_INSTALL_ARGS=--with-deps
+      - name: Exercise the board in headless Chromium
+        run: make check-board-browser
+
+  mcp-contract:
+    name: Check the plugin against the pinned MCP server
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install uv, which starts the server as it does for users
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: '0.13.8'
+          enable-cache: false
+      - name: Start the pinned server and check the tools and the board against it
+        run: make test-live PYTHON=python

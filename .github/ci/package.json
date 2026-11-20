@@ -1,0 +1,9 @@
+{
+  "name": "badge-buddy-ci",
+  "private": true,
+  "description": "Tools that CI runs against the plugin; not part of the plugin",
+  "devDependencies": {
+    "@anthropic-ai/claude-code": "2.1.328",
+    "playwright": "1.65.1"
+  }
+}

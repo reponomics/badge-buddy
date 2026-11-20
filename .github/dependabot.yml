@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # requirements-mcp.txt (the server the plugin starts) and requirements-dev.txt.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: deps
+
+  # The Claude Code CLI that CI uses to validate the plugin.
+  - package-ecosystem: npm
+    directory: /.github/ci
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+    groups:
+      action-updates:
+        applies-to: version-updates
+        patterns: ['*']

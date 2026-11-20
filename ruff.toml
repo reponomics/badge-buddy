@@ -1,0 +1,20 @@
+target-version = "py311"
+force-exclude = true
+extend-exclude = [
+    "INTERNAL",
+    "**/fixtures/**",
+    "**/vendor/**",
+    "**/third_party/**",
+    "**/third-party/**",
+]
+
+[lint]
+# Errors, warnings, import order, likely bugs, outdated syntax, security checks,
+# simplifications, comprehensions, and Ruff's own rules. The formatter owns line length.
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "C4", "RUF"]
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+# Tests start scripts and tools found on PATH as subprocesses, and build closures inside
+# subTest loops.
+"tests/**" = ["S603", "S607", "B023", "SIM117"]
