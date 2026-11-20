@@ -4,6 +4,15 @@ This page is for maintainers. A release is a version change merged to `main`, a 
 
 ## Cut a release
 
+For the current maintainer's checkout, select OpenPGP signing and the published `git-dev` key explicitly. These settings apply only to this repository:
+
+```bash
+git config --local gpg.format openpgp
+git config --local user.signingkey BA1F75AD253CF32E8C4DE9E98339CEC9D2C12CB2
+```
+
+The corresponding private key must be available through the maintainer's local GPG installation. Only its public key is committed to this repository. See [Release keys](verification.md#release-keys) for the signing identity and full fingerprint.
+
 1. Open a pull request that sets the new version in [.claude-plugin/plugin.json](../../.claude-plugin/plugin.json) and, in [CHANGELOG.md](../../CHANGELOG.md), moves the entries under `Unreleased` to a heading for the version, such as `## [1.2.3] - 2027-01-15`. Read the entry as release notes: it is published as written. Merge the pull request.
 2. Update your checkout of `main`, then sign and push the tag. The tag name is `v` followed by the version:
 
@@ -51,7 +60,7 @@ To add an OpenPGP key, append its public key to the file:
 gpg --armor --export <key-id> >> docs/release/signing-keys.asc
 ```
 
-When a key is replaced, keep the old public key in the file so that earlier releases still verify, and note the change in the changelog.
+The files above authorize keys for new releases. When a key is retired, remove it from these authorization files and preserve its public key separately for historical verification, with its fingerprint and the releases it signed documented. Announce any replacement key and its effective release in the changelog. Do not leave a retired key authorized merely to preserve historical verification.
 
 ## Repository settings the process relies on
 

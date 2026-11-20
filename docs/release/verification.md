@@ -1,6 +1,6 @@
 # Verifying a release
 
-A Badge Buddy release is a git tag named `v<version>` on the `main` branch. The tag is annotated and cryptographically signed by a maintainer, and it has a GitHub release that carries the release notes. GitHub release immutability is enabled, so a published tag cannot be moved or deleted.
+A Badge Buddy release is a git tag named `v<version>` on the `main` branch. The tag is annotated and cryptographically signed by a maintainer, and it has a GitHub release that carries the release notes. Maintainers must enable GitHub release immutability before publishing; the verification steps below check that the published release is immutable.
 
 Claude Code installs a plugin by cloning its repository and does not check signatures. The checks on this page use git with GnuPG or OpenSSH, and none of them depends on Claude Code.
 
@@ -21,6 +21,14 @@ claude plugin install badge-buddy@badge-buddy
 A pinned install stays on that release; updating the plugin does not move it. To move to a newer release, register the marketplace at the newer tag. If your version of Claude Code needs the old registration removed first, be aware that removing a marketplace also uninstalls its plugins.
 
 ## Release keys
+
+The current release signer is **Really Him ([hesreallyhim](https://github.com/hesreallyhim)), `git-dev@hesreallyhim.com`**, using this OpenPGP primary-key fingerprint:
+
+```text
+BA1F 75AD 253C F32E 8C4D E9E9 8339 CEC9 D2C1 2CB2
+```
+
+Download the public key from [signing-keys.asc](signing-keys.asc). The same key is published in the maintainer's [GitHub public-key bundle](https://github.com/hesreallyhim.gpg), which may contain other keys that are not authorized to sign Badge Buddy releases. Compare the full fingerprint above, not just the name or email address.
 
 The public keys that may sign a release are published in this repository's `main` branch, in `docs/release/`:
 
