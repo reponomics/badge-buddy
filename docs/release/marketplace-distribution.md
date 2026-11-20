@@ -2,11 +2,13 @@
 
 Reviewed on 2026-11-19. This note records a proposed distribution change, its trust assumptions, and a rehearsal plan. It is not an implemented release procedure. Neither marketplace has been redirected, and the rehearsal has not been run.
 
+Release scope decision: `0.4.0-beta.1` keeps the standalone marketplace following `main` and assumes no existing consumers of the previous implementation. Migration, catalog promotion, archive distribution, and reusable verification tooling are deferred. The old marketplace can distribute the standalone plugin later without making migration support a release requirement.
+
 ## What is currently deployed
 
-The standalone catalog in [marketplace.json](../../.claude-plugin/marketplace.json) lists Badge Buddy with `"source": "./"`. The live [`reponomics/plugins` catalog](https://github.com/reponomics/plugins/blob/main/.claude-plugin/marketplace.json), checked during this review, still lists the old implementation at `./plugins/badge-buddy`. Both plugin manifests currently declare `0.3.0-beta.1`.
+The standalone catalog in [marketplace.json](../../.claude-plugin/marketplace.json) lists Badge Buddy with `"source": "./"`. The live [`reponomics/plugins` catalog](https://github.com/reponomics/plugins/blob/main/.claude-plugin/marketplace.json), checked during this review, still lists the old implementation at `./plugins/badge-buddy`. Both manifests declared `0.3.0-beta.1` when this research began; standalone release preparation now sets its manifest to `0.4.0-beta.1`.
 
-The standalone repository's release workflow checks signed Git tags and publishes a GitHub release. It does not produce a plugin ZIP or advance a marketplace pointer. Its tag trigger, checker, tests, and examples still need to adopt `badge-buddy--v<version>`. Its prerelease detection must examine the version suffix, not the hyphens in the plugin name.
+The standalone repository's release workflow checks signed Git tags and publishes a GitHub release. It does not produce a plugin ZIP or advance a marketplace pointer. Release preparation aligns the trigger, checker, tests, and examples with `badge-buddy--v<version>` and makes prerelease detection examine the version suffix rather than the plugin-name hyphens.
 
 ## Catalog authority and source changes
 
@@ -45,7 +47,7 @@ Post-release promotion creates a documentation trap: the marketplace file inside
 
 A pushed tag can be discovered by consumers before a GitHub release exists. Do not describe deleting and recreating an exposed tag as harmless recovery. Prefer a corrected version and preserve the failed release's history.
 
-## Existing users of the old marketplace
+## Historical transition considerations (deferred)
 
 The proposed compatibility option is to retain the `badge-buddy` entry in `reponomics`, point it at the maintained release, and stop developing the bundled implementation. The new repository and target release must be accessible to existing users first. This would preserve the install identity `badge-buddy@reponomics`; it also means advancing two catalog entries when a release is promoted. Rehearse this before changing the old catalog.
 
