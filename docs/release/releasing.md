@@ -40,6 +40,17 @@ A version with a prerelease suffix, such as `1.3.0-beta.1`, uses the tag `badge-
 
 Merging the version PR does not publish a GitHub release; pushing the tag triggers publication. The marketplace currently follows `main`, so marketplace installation is not gated on that publication. No additional catalog promotion or legacy-user migration is required for `0.4.0-beta.1`.
 
+## Scorecard integration acceptance
+
+Before releasing the CLI/MCP integration or changing its compatibility baseline:
+
+- Verify that the plugin version advances and the changelog describes the required executable, any command changes, and compatibility policy. `tools/release_check.py pin-bump` watches the Best Practices package only; it does not enforce these Scorecard changes.
+- Run `make check`, `make test-live`, `make test-scorecard`, and `make plugin-validate`. Confirm the separate Scorecard CI job passes with its checksum-verified release binary; a local macOS run does not establish the Linux CI result.
+- Review the [recorded Scorecard evaluations](../../tests/scorecard-skill-evals.md) for actual installation, executable identity, missing dependency, connection, and skill-routing evidence. Treat unrun cases or failed measurements explicitly when deciding release readiness.
+- Inspect the release commit's file inventory: `.mcp.json`, the skill and every linked reference, and `scripts/scorecard.py` must be included. The current release uses the repository snapshot; there is no separate generated plugin bundle. Never ship a developer's executable, credentials, or temporary evaluation state.
+
+The manifest version can identify a pending release while its notes remain under `Unreleased`; move those notes to a dated version heading as part of the release pull request before tagging.
+
 ## If something goes wrong
 
 Never move or reuse a tag that has been pushed: consumers can fetch it even before a GitHub release exists. If the tagged content is wrong, fix it in a new version. If publication failed because of a repository setting or a transient service failure, correct the cause and rerun the workflow for the unchanged tag. A tag that has never left the local checkout can be corrected before pushing.

@@ -88,3 +88,37 @@ jobs:
           enable-cache: false
       - name: Start the pinned server and check the tools and the board against it
         run: make test-live PYTHON=python
+
+  scorecard-contract:
+    name: Check Scorecard MCP and CLI contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Download and verify the pinned Scorecard test binary
+        # The committed digest was checked against upstream's release checksum
+        # and asset metadata. This is CI setup, not a plugin runtime installer.
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(jq -r .version .github/ci/scorecard.json)
+          artifact=$(jq -r .artifact .github/ci/scorecard.json)
+          digest=$(jq -r .sha256 .github/ci/scorecard.json)
+          destination="$RUNNER_TEMP/scorecard-contract"
+          mkdir -p "$destination"
+          archive="$destination/$artifact"
+          curl --fail --location --silent --show-error --proto '=https' \
+            "https://github.com/ossf/scorecard/releases/download/$version/$artifact" \
+            --output "$archive"
+          printf '%s  %s\n' "$digest" "$archive" | sha256sum --check --strict
+          tar -xzf "$archive" -C "$destination" scorecard
+          "$destination/scorecard" version --json
+      - name: Exercise real MCP tools and local diagnostic failure paths
+        run: make test-scorecard PYTHON=python SCORECARD="$RUNNER_TEMP/scorecard-contract/scorecard"

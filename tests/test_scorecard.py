@@ -404,23 +404,41 @@ class RepositoryGuidanceTest(unittest.TestCase):
 
 
 class PublicApiTest(ControllerTestCase):
-    def test_fetch_reads_public_endpoint_and_uses_only_upstream_score(self) -> None:
+    def test_capture_confirms_saved_identity_without_exposing_findings(self) -> None:
         requests: list[tuple[Any, int]] = []
+        document = result_document({"License": 10}, reported=4.2)
+        destination = self.root / "snapshot.json"
 
         def opener(request: Any, timeout: int = 0) -> FakeResponse:
             requests.append((request, timeout))
-            return FakeResponse(
-                json.dumps(result_document({"License": 10}, reported=4.2))
-            )
+            return FakeResponse(json.dumps(document))
 
         code, payload = self.run_command(
-            ["fetch", "--repo", "example/project"], opener=opener
+            ["fetch", "--repo", "example/project", "--output", str(destination)],
+            opener=opener,
         )
         self.assertEqual(0, code, self.stderr)
-        self.assertEqual("fetched", payload["state"])
-        self.assertEqual(1, payload["schema_version"])
-        self.assertEqual(4.2, payload["reported_score"])
-        self.assertEqual("api", payload["provenance"]["source"])
+        self.assertEqual(
+            {
+                "state": "snapshot_saved",
+                "schema_version": 1,
+                "output": str(destination),
+                "repo": document["repo"]["name"],
+                "commit": document["repo"]["commit"],
+                "date": document["date"],
+                "scorecard_version": document["scorecard"]["version"],
+                "scorecard_commit": document["scorecard"]["commit"],
+                "provenance": {
+                    "source": "api",
+                    "origin": "https://api.scorecard.dev/projects/github.com/example/project",
+                    "viewer": "https://scorecard.dev/viewer/?uri=github.com/example/project",
+                },
+            },
+            payload,
+        )
+        saved = json.loads(destination.read_text(encoding="utf-8"))
+        self.assertEqual(4.2, saved["score"])
+        self.assertEqual(document["checks"], saved["checks"])
         self.assertEqual(1, len(requests))
         request, timeout = requests[0]
         self.assertEqual(
@@ -435,6 +453,7 @@ class PublicApiTest(ControllerTestCase):
         document = result_document()
         document["future_metadata"] = {"nested": ["preserve", 42]}
         document["checks"][0]["future_evidence"] = ["retain this too"]
+        document["checks"][0]["annotations"] = ["retain the maintainer's context"]
         code, fetched, destination = self.fetch_document(
             document, "nested/baseline.json"
         )
@@ -447,14 +466,18 @@ class PublicApiTest(ControllerTestCase):
         code, imported = self.run_command(["explain", "--input", str(destination)])
         self.assertEqual(0, code, self.stderr)
         for key in (
-            "reported_score",
             "repo",
             "commit",
             "date",
+            "scorecard_version",
+            "scorecard_commit",
             "provenance",
-            "coverage_notes",
         ):
             self.assertEqual(fetched[key], imported[key])
+        self.assertEqual(document["score"], imported["reported_score"])
+        self.assertEqual(
+            document["checks"][0]["annotations"], imported["checks"][0]["annotations"]
+        )
         self.assertIn("publish", " ".join(imported["coverage_notes"]).lower())
 
     def test_supported_repository_forms_select_correct_endpoint(self) -> None:
@@ -491,10 +514,47 @@ class PublicApiTest(ControllerTestCase):
                     return FakeResponse(json.dumps(document))
 
                 code, payload = self.run_command(
-                    ["fetch", "--repo", spelling], opener=opener
+                    [
+                        "fetch",
+                        "--repo",
+                        spelling,
+                        "--output",
+                        str(self.root / "snapshot.json"),
+                    ],
+                    opener=opener,
                 )
                 self.assertEqual(0, code, self.stderr)
                 self.assertEqual(normalized, payload["repo"])
+
+    def test_gitlab_subgroup_capture_remains_inspectable_offline(self) -> None:
+        document = result_document({"License": 10, "Signed-Releases": -1})
+        document["repo"]["name"] = "gitlab.com/group/subgroup/project"
+        document["checks"][0]["annotations"] = ["license applies to every package"]
+        destination = self.root / "subgroup.json"
+        code, captured = self.run_command(
+            [
+                "fetch",
+                "--repo",
+                document["repo"]["name"],
+                "--output",
+                str(destination),
+            ],
+            opener=lambda *args, **kwargs: FakeResponse(json.dumps(document)),
+        )
+        self.assertEqual(0, code, self.stderr)
+        opener = Mock(side_effect=AssertionError("offline inspection used the network"))
+        code, imported = self.run_command(
+            ["explain", "--input", str(destination)], opener=opener
+        )
+        self.assertEqual(0, code, self.stderr)
+        opener.assert_not_called()
+        self.assertEqual(captured["repo"], imported["repo"])
+        self.assertEqual(captured["provenance"], imported["provenance"])
+        self.assertEqual(4.2, imported["reported_score"])
+        self.assertEqual(["Signed-Releases"], imported["checks_excluded"])
+        self.assertEqual(
+            document["checks"][0]["annotations"], imported["checks"][0]["annotations"]
+        )
 
     def test_invalid_repository_forms_do_not_make_network_requests(self) -> None:
         for repo in (
@@ -523,7 +583,16 @@ class PublicApiTest(ControllerTestCase):
         ):
             with self.subTest(repo=repo):
                 opener = Mock()
-                code, _ = self.run_command(["fetch", "--repo", repo], opener=opener)
+                code, _ = self.run_command(
+                    [
+                        "fetch",
+                        "--repo",
+                        repo,
+                        "--output",
+                        str(self.root / "snapshot.json"),
+                    ],
+                    opener=opener,
+                )
                 self.assert_clean_error(code)
                 opener.assert_not_called()
 
@@ -548,7 +617,7 @@ class PublicApiTest(ControllerTestCase):
                     ["explain", "--input", str(destination)]
                 )
                 self.assertEqual(0, code, self.stderr)
-                self.assertEqual(fetched["coverage_notes"], imported["coverage_notes"])
+                self.assertEqual(fetched["provenance"], imported["provenance"])
                 notes = " ".join(imported["coverage_notes"])
                 self.assertIn("API date and commit", notes)
                 if host == "gitlab.com":
@@ -571,7 +640,13 @@ class PublicApiTest(ControllerTestCase):
             )
 
         code, _ = self.run_command(
-            ["fetch", "--repo", "https://gitlab.com/group/subgroup/project.git"],
+            [
+                "fetch",
+                "--repo",
+                "https://gitlab.com/group/subgroup/project.git",
+                "--output",
+                str(self.root / "snapshot.json"),
+            ],
             opener=opener,
         )
         self.assert_clean_error(code)
@@ -595,7 +670,13 @@ class PublicApiTest(ControllerTestCase):
             )
 
         code, _ = self.run_command(
-            ["fetch", "--repo", "https://GitLab.com/group.git/project.git.git"],
+            [
+                "fetch",
+                "--repo",
+                "https://GitLab.com/group.git/project.git.git",
+                "--output",
+                str(self.root / "snapshot.json"),
+            ],
             opener=opener,
         )
         self.assert_clean_error(code)
@@ -623,7 +704,14 @@ class PublicApiTest(ControllerTestCase):
                     )
 
                 code, _ = self.run_command(
-                    ["fetch", "--repo", "example/project"], opener=opener
+                    [
+                        "fetch",
+                        "--repo",
+                        "example/project",
+                        "--output",
+                        str(self.root / "snapshot.json"),
+                    ],
+                    opener=opener,
                 )
                 self.assert_clean_error(code)
                 if status == 404:
@@ -644,13 +732,26 @@ class PublicApiTest(ControllerTestCase):
                     raise failure
 
                 code, _ = self.run_command(
-                    ["fetch", "--repo", "example/project"], opener=opener
+                    [
+                        "fetch",
+                        "--repo",
+                        "example/project",
+                        "--output",
+                        str(self.root / "snapshot.json"),
+                    ],
+                    opener=opener,
                 )
                 self.assert_clean_error(code)
         for response in ("not json", "{}", "[]", b"\xff"):
             with self.subTest(response=response):
                 code, _ = self.run_command(
-                    ["fetch", "--repo", "example/project"],
+                    [
+                        "fetch",
+                        "--repo",
+                        "example/project",
+                        "--output",
+                        str(self.root / "snapshot.json"),
+                    ],
                     opener=lambda *args, **kwargs: FakeResponse(response),
                 )
                 self.assert_clean_error(code)
@@ -658,8 +759,9 @@ class PublicApiTest(ControllerTestCase):
     def test_output_write_failure_returns_a_clean_error(self) -> None:
         blocker = self.root / "file"
         blocker.write_text("not a directory", encoding="utf-8")
-        code, _, _ = self.fetch_document(result_document(), "file/result.json")
+        code, payload, _ = self.fetch_document(result_document(), "file/result.json")
         self.assert_clean_error(code)
+        self.assertEqual({}, payload)
 
 
 class ComparisonTest(ControllerTestCase):
@@ -906,6 +1008,33 @@ class ComparisonTest(ControllerTestCase):
 
 
 class CommandSurfaceTest(ControllerTestCase):
+    def test_query_only_fetch_is_rejected_before_acquisition(self) -> None:
+        opener = Mock()
+        code, payload = self.run_command(
+            ["fetch", "--repo", "example/project"], opener=opener
+        )
+        self.assert_clean_error(code)
+        self.assertIn("--output", self.stderr)
+        self.assertEqual({}, payload)
+        opener.assert_not_called()
+        self.assertEqual([], list(self.root.iterdir()))
+
+    def test_executable_rejects_query_only_fetch(self) -> None:
+        completed = subprocess.run(
+            [
+                str(REPOSITORY_ROOT / "scripts" / "scorecard.py"),
+                "fetch",
+                "--repo",
+                "example/project",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(2, completed.returncode)
+        self.assertIn("--output", completed.stderr)
+        self.assertEqual("", completed.stdout)
+
     def test_controller_can_be_executed_directly(self) -> None:
         completed = subprocess.run(
             [str(REPOSITORY_ROOT / "scripts" / "scorecard.py"), "--help"],

@@ -2,7 +2,7 @@
 
 Use the result's reason, details, and version-specific upstream documentation to identify the problem before proposing an edit. These are practical investigation leads, not a scoring specification or a checklist to apply to every repository. Work within the selected scope and verify relevant local behavior; a later published scan establishes any score effect.
 
-Explain the concrete benefit, effort, and verification path. Distinguish risk reduction, maintenance improvements, and changes that only help a detector recognize an existing practice. Never substitute an unused tool, an empty test, or a false policy for an operating practice. Choose work for its relevance to the repository, not a projected numerical lift.
+Explain the concrete benefit, effort, maintenance cost, and verification path. Consider the user's score goals and likely detector recognition alongside those factors. A modest useful addition can be worthwhile even if a higher score motivates it; it need not be the project's highest-priority security investment. Distinguish practical value, expected recognition, and observed score effect. Never substitute an unused tool, an empty test, or a false policy for an operating practice, or promise a numerical lift from an unmeasured edit.
 
 ## Workflow permissions and dependency pins
 
@@ -39,6 +39,8 @@ A check's inability to read a setting is different from that setting being absen
 
 For `SAST`, choose a supported analyzer appropriate to the project's languages and existing CI, then verify it actually runs on the intended changes. For `Fuzzing`, exercise a real parser, decoder, or other untrusted-input boundary and demonstrate that the target runs meaningfully.
 
+For example, a Python project may benefit from a small Atheris target around a real parser even when improving `Fuzzing` prompted the idea. Inspect the detector at the version that will measure the repository, including file patterns, language selection, and exclusions; start with [v5.7.0's fuzzing implementation](https://github.com/ossf/scorecard/blob/v5.7.0/checks/raw/fuzzing.go) for the tested baseline. The prose check documentation may lag implementation details. Add and exercise a meaningful target and supported automation within the authorized scope, then use a targeted local preflight where supported. Local language selection and remote prominence differ, so verify the later remote result before claiming recognition. Preserve useful work even if the detector has a gap, and explain that gap rather than adding misleading evidence to satisfy it.
+
 For `Vulnerabilities`, inspect the identified advisory and dependency path, implement a compatible fix, and test the affected behavior. If the project believes an advisory does not apply, document the concrete basis and consult the measured version's upstream suppression guidance. Never add an ignore solely to remove a reported finding. External advisory updates can affect the next scan independently of local changes.
 
 ## Packaging and releases
@@ -48,5 +50,7 @@ For `Packaging` and `Signed-Releases`, investigate the actual build, publication
 ## Historical and external conditions
 
 `Maintained` and `Contributors` reflect activity and contributor history. Explain the supported cause of a result; do not manufacture commits or affiliations to influence it. Other checks may depend on external services, token visibility, or repository history. Confirm those constraints in upstream documentation before attributing a result to a missing configuration file.
+
+Plan longitudinal work in ordinary project notes when useful: proposed, implementing, PR open, reviewed, merged, awaiting measurement, and observed. Record the next event or measurement needed for history-dependent checks. A configured review rule does not create a review history, and an open PR is not a merged change. Explain these distinctions without treating every low score as something that must be repaired in one session.
 
 For `CII-Best-Practices`, invoke `badge-buddy:ossf-bp-badges` (the [Best Practices entrypoint](../../ossf-bp-badges/SKILL.md)) to resolve its invocation context and support honest progress in the separate badge program. For publication or badge setup, follow [action-publication.md](action-publication.md) and verify the resulting API record.
