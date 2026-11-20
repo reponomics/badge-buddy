@@ -134,7 +134,16 @@ def signature_problem(tag: str, keys: Path, *, cwd: Path) -> str | None:
     # An empty keyring, so that only the published keys can vouch for the tag. The path is
     # short because GnuPG refuses socket paths longer than the platform's limit.
     with tempfile.TemporaryDirectory(prefix="rk-", dir=_short_temp()) as home:
-        env = {**os.environ, "GNUPGHOME": home}
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if not key.startswith("GIT_CONFIG_")
+        }
+        env.update(
+            GNUPGHOME=home,
+            GIT_CONFIG_GLOBAL=os.devnull,
+            GIT_CONFIG_NOSYSTEM="1",
+        )
         if openpgp.is_file():
             imported = subprocess.run(  # noqa: S603
                 ["gpg", "--batch", "--quiet", "--import", str(openpgp)],  # noqa: S607
@@ -144,9 +153,21 @@ def signature_problem(tag: str, keys: Path, *, cwd: Path) -> str | None:
             )
             if imported.returncode != 0:
                 return f"Could not read {openpgp.name}: {imported.stderr.strip()}"
-        signers = ["-c", f"gpg.ssh.allowedSignersFile={ssh}"] if ssh.is_file() else []
+        # Command-line settings also override repository-local configuration. Never
+        # inherit another allowed-signers file or a replacement verifier program.
+        # X.509 is unsupported: no certificate store is published by this checker.
+        verification_config = [
+            "gpg.program=gpg",
+            "gpg.openpgp.program=gpg",
+            "gpg.ssh.program=ssh-keygen",
+            "gpg.x509.program=",
+            f"gpg.ssh.allowedSignersFile={ssh if ssh.is_file() else os.devnull}",
+            "gpg.ssh.revocationFile=",
+            "gpg.minTrustLevel=undefined",
+        ]
+        options = [item for setting in verification_config for item in ("-c", setting)]
         verified = subprocess.run(  # noqa: S603
-            ["git", *signers, "verify-tag", tag],  # noqa: S607
+            ["git", *options, "verify-tag", tag],  # noqa: S607
             cwd=cwd,
             env=env,
             capture_output=True,

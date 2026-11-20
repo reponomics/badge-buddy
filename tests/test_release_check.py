@@ -215,6 +215,18 @@ class SignatureTest(ScratchRepositoryTest):
         (self.keys / release_check.OPENPGP_KEYS).write_bytes(other)
         self.assertEqual(1, len(self.problems()))
 
+    @unittest.skipUnless(shutil.which("gpg"), "GnuPG is needed to create this tag")
+    def test_published_openpgp_verification_ignores_local_verifier_settings(
+        self,
+    ) -> None:
+        signer, public = self.openpgp_key(f"Release Signer <{self.SIGNER}>")
+        self.sign("-c", f"user.signingkey={self.SIGNER}", env=signer)
+        (self.keys / release_check.OPENPGP_KEYS).write_bytes(public)
+        self.repo.git("config", "gpg.program", "/missing/ambient-gpg")
+        self.repo.git("config", "gpg.openpgp.program", "/missing/ambient-gpg")
+        self.repo.git("config", "gpg.minTrustLevel", "ultimate")
+        self.assertEqual([], self.problems())
+
     @unittest.skipUnless(
         shutil.which("ssh-keygen"), "OpenSSH is needed to create this tag"
     )
@@ -226,6 +238,28 @@ class SignatureTest(ScratchRepositoryTest):
         self.assertEqual([], self.problems())
         (self.keys / release_check.SSH_SIGNERS).write_text(other)
         self.assertEqual(1, len(self.problems()))
+
+    @unittest.skipUnless(
+        shutil.which("gpg") and shutil.which("ssh-keygen"),
+        "GnuPG and OpenSSH are needed for the mixed-key regression",
+    )
+    def test_unpublished_ssh_key_is_rejected_despite_ambient_authorization(
+        self,
+    ) -> None:
+        key, signer = self.ssh_key()
+        self.sign("-c", "gpg.format=ssh", "-c", f"user.signingkey={key}.pub")
+        _, public = self.openpgp_key(f"Release Signer <{self.SIGNER}>")
+        (self.keys / release_check.OPENPGP_KEYS).write_bytes(public)
+        ambient = self.directory("ambient-") / "allowed_signers"
+        ambient.write_text(signer)
+        self.repo.git("config", "gpg.ssh.allowedSignersFile", str(ambient))
+        # This tag really is accepted by the ambient configuration, but its key
+        # is absent from the project's published release keys.
+        self.repo.git("verify-tag", "v1.2.3")
+        [problem] = self.problems()
+        self.assertIn("valid signature from a published release key", problem)
+        (self.keys / release_check.SSH_SIGNERS).write_text(signer)
+        self.assertEqual([], self.problems())
 
     def test_a_signature_is_required_and_needs_published_keys(self) -> None:
         self.repo.git("tag", "--annotate", "--message", "v1.2.3", "v1.2.3")
