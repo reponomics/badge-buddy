@@ -4,6 +4,22 @@ Notable changes to Badge Buddy, newest first. Versions follow [Semantic Versioni
 
 ## [Unreleased]
 
+Planned plugin version: `0.5.0-beta.1`.
+
+### Added
+
+- Upstream Scorecard MCP for published results and check explanations, plus direct CLI workflows for fresh targeted scans and supported local checks. Both use the same user-installed executable; v5.7.0 is the tested compatibility baseline.
+- Scorecard connection and executable troubleshooting, evidence-preserving diagnostic guidance, and a separate real-binary contract suite with controlled API responses and disposable local repositories.
+
+### Changed
+
+- Scorecard guidance supports useful incremental improvements motivated by the user's score goals, investigates whether the measured scanner recognizes them, and distinguishes local validation, fresh scans, publication, and progress that depends on project history.
+
+### Breaking changes
+
+- The integrated Scorecard workflow now requires a locally installed Scorecard executable with its MCP subcommand. The plugin does not install it. Best Practices and the other engineering skills remain independently usable. Supplied Scorecard reports can still be inspected offline.
+- The Scorecard helper's `fetch` command now requires `--output` and returns capture confirmation and measurement provenance instead of the full interpreted result. Use MCP for ordinary published-result queries, or `explain --input` to inspect a saved original report. Snapshot comparison and GitLab subgroup capture/import remain available.
+
 ## [0.4.0-beta.1] - 2026-11-19
 
 Badge Buddy now lives in its own repository and is its own plugin marketplace. Versions up to 0.3.0-beta.1 were published from the `reponomics/plugins` marketplace.

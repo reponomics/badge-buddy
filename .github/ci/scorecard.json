@@ -1,0 +1,7 @@
+{
+  "version": "v5.7.0",
+  "commit": "d7552fb3cdc05e9f6426177d3328887304fce554",
+  "artifact": "scorecard_5.7.0_linux_amd64.tar.gz",
+  "sha256": "3b08ec0a8681806c3e744ec9210742a502c7d66f06f25523b70f7128738235d3",
+  "source": "https://github.com/ossf/scorecard/releases/tag/v5.7.0"
+}

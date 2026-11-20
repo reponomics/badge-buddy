@@ -2,6 +2,7 @@ PYTHON ?= python3
 VENV ?= venv
 VENV_PYTHON := $(VENV)/bin/python
 CLAUDE ?= claude
+SCORECARD ?= scorecard
 NODE ?= node
 NPM ?= npm
 PLAYWRIGHT_INSTALL_ARGS ?=
@@ -9,7 +10,7 @@ PY_DIRS := scripts skills tests tools
 
 .DEFAULT_GOAL := help
 
-.PHONY: help setup dev-deps browser-deps setup-board-browser lint format test test-live check plugin-validate check-board-browser clean
+.PHONY: help setup dev-deps browser-deps setup-board-browser lint format test test-live test-scorecard check plugin-validate check-board-browser clean
 
 help: ## Show available targets.
 	@awk 'BEGIN {FS = ":.*## "; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z0-9_-]+:.*## / {printf "  %-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -45,6 +46,9 @@ test: dev-deps ## Run offline tests, combine subprocess coverage, and enforce bo
 
 test-live: setup ## Check the plugin against the pinned MCP server (starts it with uvx; needs network).
 	$(VENV_PYTHON) -m unittest discover -s tests/live -t tests/live -v
+
+test-scorecard: setup ## Check the installed Scorecard build against controlled MCP responses and local CLI fixtures.
+	SCORECARD="$(SCORECARD)" $(VENV_PYTHON) -W error::ResourceWarning -m unittest discover -s tests/scorecard_live -t tests/scorecard_live -v
 
 check: lint test ## Run lint, tests with coverage, and compile every Python source file.
 	$(VENV_PYTHON) -m compileall -q $(PY_DIRS)

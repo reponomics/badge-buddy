@@ -16,7 +16,7 @@ Stay within the current publishing-job restrictions, including allowed actions; 
 
 ## Verify publication
 
-After authorized changes reach the default branch and the supported trigger runs, inspect the relevant Action execution and publication logs. Fetch the API result into a new snapshot and verify its repository, commit, and date against the intended revision and run. Record these separate states accurately:
+After authorized changes reach the default branch and the supported trigger runs, inspect the relevant Action execution and publication logs. Query the published result through MCP and verify its repository, commit, and date against the intended revision and run. Capture a new original snapshot only when it is needed for a saved comparison; a query and a later capture can observe different records. Record these separate states accurately:
 
 - The workflow file and repository changes passed local validation.
 - The remote analysis and publishing run succeeded, failed, or has not run.
@@ -26,7 +26,7 @@ Where supported, use `results_published` and `publication_status`, together with
 
 For a failed run, investigate its actual error, especially publication restrictions, OIDC permissions, and optional expired credentials. A successful scan or artifact upload does not prove publication succeeded. For a stale API response, retry with bounded pacing; if it remains stale, finish with publication pending and the revision/run to check next. Do not change code or widen permissions solely because the badge has not updated yet.
 
-Use the controller's `diff` on the saved baseline and newer result for observed changes. Review comparison warnings before explaining score movement; a new tool version or coverage change can alter results independently of the repository edits.
+Use the controller's `diff` on the saved baseline and newer original result for observed changes; MCP `compare_repos` is not a before/after comparison. Review comparison warnings before explaining score movement; a new tool version, access level, or coverage change can alter results independently of repository edits. Preserve the distinction between local validation, fresh remote diagnostics, publication, and the badge's displayed measurement.
 
 ## Add or repair the badge
 

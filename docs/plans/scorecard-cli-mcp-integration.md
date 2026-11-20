@@ -1,6 +1,8 @@
 # Scorecard CLI and MCP integration plan
 
-Status: reviewed and ready for implementation, subject to the explicit implementation gates below; no runtime changes yet. Recorded and reviewed 2026-11-20 on `codex/scorecard-cli-mcp-plan`, based on Badge Buddy commit `62d49824458051e6ffb0ed0c14ed27cdc5d4acd1`. Keep this branch local until the maintainer requests publication.
+Status: implemented locally on 2026-11-20 for proposed version `0.5.0-beta.1`; no publication requested. The approved plan below was recorded and reviewed on `codex/scorecard-cli-mcp-plan`, based on Badge Buddy commit `62d49824458051e6ffb0ed0c14ed27cdc5d4acd1`. Keep this branch local until the maintainer requests publication.
+
+Implementation includes the required Scorecard MCP registration, same-executable CLI guidance, capture-only `fetch --output`, retained offline evidence operations, and an independent verified-binary CI lane. See [Scorecard evaluations](../../tests/scorecard-skill-evals.md) for host and agent observations, including unsuccessful rehearsals and outstanding platform checks. The release acceptance checklist remains in [Releasing](../release/releasing.md#scorecard-integration-acceptance). The historical baseline and implementation gates below explain the decisions; they are not a claim that every platform or behavioral scenario has passed.
 
 Related private planning lives in the sibling Scorecard fork on `badge-buddy-integration`, under `planning/badge-buddy/` (initial planning commit `5d418dfb`). That work covers the hosted service, provider research, and upstream contributions. This document is the implementation plan for the Badge Buddy side and must remain usable without that checkout.
 
@@ -14,7 +16,7 @@ The Scorecard binary is a required dependency for the integrated Scorecard workf
 
 Do not maintain redundant script implementations as connection-failure backups. Retained scripts must provide capabilities absent from the upstream interfaces: original published snapshots, supplied-document inspection, and provenance-aware comparison. Remove the redundant live-query command mode in this integration rather than leaving it indefinitely deprecated.
 
-## Current implementation
+## Pre-integration baseline
 
 - [.mcp.json](../../.mcp.json) starts only `bestpractices`, using `best-practices-mcp==0.7.0` through `uvx`.
 - [The Scorecard skill](../../skills/ossf-scorecard/SKILL.md) uses [scripts/scorecard.py](../../scripts/scorecard.py) for `fetch`, `explain`, and `diff`. Its tool permissions reference that controller. It explicitly says the plugin does not install or orchestrate Scorecard binaries.

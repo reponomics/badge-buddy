@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Retrieve, inspect, and compare Scorecard results.
+"""Capture, inspect, and compare Scorecard evidence.
 
 The controller reads published API results or supplied JSON. It preserves
 scores and findings without running the scanner or calculating scores.
@@ -558,11 +558,11 @@ def compare(before: Result, after: Result) -> dict[str, Any]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Retrieve and inspect upstream OpenSSF Scorecard results."
+        description="Capture and inspect upstream OpenSSF Scorecard evidence."
     )
     commands = parser.add_subparsers(dest="command", required=True)
     fetch = commands.add_parser(
-        "fetch", help="read the latest published API result; does not run a scan"
+        "fetch", help="save an original published API snapshot; does not run a scan"
     )
     fetch.add_argument(
         "--repo",
@@ -571,6 +571,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     fetch.add_argument(
         "--output",
+        required=True,
         type=Path,
         help="save the upstream JSON with acquisition metadata for later use",
     )
@@ -609,11 +610,17 @@ def execute_command(args: argparse.Namespace, *, opener: Any) -> dict[str, Any]:
     if args.command == "explain":
         return result_payload(read_result_file(args.input), "explained")
     result = fetch_public_api(args.repo, opener=opener)
-    payload = result_payload(result, "fetched")
-    if args.output is not None:
-        write_snapshot(result, args.output)
-    payload["output"] = str(args.output) if args.output is not None else None
-    return payload
+    write_snapshot(result, args.output)
+    return {
+        "state": "snapshot_saved",
+        "output": str(args.output.expanduser()),
+        "repo": result.repo,
+        "commit": result.commit,
+        "date": result.date,
+        "scorecard_version": result.scorecard_version,
+        "scorecard_commit": result.scorecard_commit,
+        "provenance": dict(result.provenance),
+    }
 
 
 def main(
