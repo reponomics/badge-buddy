@@ -2,6 +2,8 @@
 
 This page is for maintainers. A release is a version change merged to `main`, a tag that a maintainer signs on their own machine, and a GitHub release that a workflow publishes after checking the tag.
 
+For an agent-guided or explicitly authorized autonomous release, use the [release assistant routine](assistant.md). It explains how to discover current state, respect the requested stopping point, resume safely, and verify completion using this procedure.
+
 The proposed separation of development from marketplace distribution, the old marketplace transition, and verification limits are recorded in [Marketplace distribution and verification research](marketplace-distribution.md). That design and its disposable rehearsal are pending; they are not implemented by the procedure below.
 
 ## Cut a release
