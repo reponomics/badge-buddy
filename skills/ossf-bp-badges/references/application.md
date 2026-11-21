@@ -6,7 +6,7 @@ Read the section for the operation requested. Tools named below belong to the pl
 
 Keep all badge sections of a project in its MCP draft, and briefly tell the user where progress is saved using the reported `location`. If the user asks to work from a `.bestpractices.json` kept in a repository, or to reuse another project's answers, read [Repository file](#repository-file) before continuing; do not suggest that arrangement otherwise.
 
-Once at the start of each session, find the project and synchronize the draft with the website for the level being worked on:
+When beginning or resuming draft work in a session, find the project and synchronize the draft with the website for the level being worked on:
 
 1. `find_project(query)` with the repository's URL, or the numeric ID when it is known. The tool returns candidates and does not choose between them. Continue with a single candidate whose `repo_url` is the repository; ask the user when several match; for none, see [Before registration](#before-registration).
 2. `get_project_status(project_id)` to orient the session around the project's current progress.

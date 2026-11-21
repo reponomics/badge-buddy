@@ -47,7 +47,7 @@ Retrieve the complete record for the selected section and criterion using the lo
 
 For Metal badges, every applicable MUST or MUST NOT must be satisfied. A SHOULD practice that the project has chosen not to adopt is `Unmet`, but can count toward the badge with a justification explaining the decision and its implications. A SUGGESTED practice counts as complete with either `Met` or `Unmet`. Preserve these distinctions; raw answer counts are not badge percentages.
 
-For a full section, collect shared project information once and reuse it across related criteria. Draft answers from that information, including the user's account, and group remaining questions by subject. Repository searches can help find details and links; an unsuccessful search does not invalidate something the user has told you. Present criteria grouped as on the form, which for Metal levels means by category in the order Basics, Change Control, Reporting, Quality, Security, Analysis, without turning each one into a separate interview question. Propose an answer for each criterion that is unanswered or `?` when the project information or the user's account supports one, and leave `?` when it does not. Review the existing answers as well. When current facts support a different status or clearer wording, for example an `Unmet` criterion that the project now meets, tell the user what you would change and why. Record a change to an existing answer after the user agrees.
+For a requested full-section assessment or draft, collect shared project information once and reuse it across related criteria. Draft answers from that information, including the user's account, and group remaining questions by subject. Repository searches can help find details and links; an unsuccessful search does not invalidate something the user has told you. Present criteria grouped as on the form, which for Metal levels means by category in the order Basics, Change Control, Reporting, Quality, Security, Analysis, without turning each one into a separate interview question. Propose an answer for each criterion that is unanswered or `?` when the project information or the user's account supports one, and leave `?` when it does not. Review the existing answers as well. When current facts support a different status or clearer wording, for example an `Unmet` criterion that the project now meets, tell the user what you would change and why. Record a change to an existing answer after the user agrees.
 
 ### Look up selected criteria
 
@@ -67,7 +67,7 @@ When the requested draft is ready, ask a second agent to review your work: your 
 
 ## Work with the application
 
-Before the first application operation, read [Start or resume](references/application.md#start-or-resume), select the project, and synchronize the draft. After startup, read only the section for the current task:
+Use the available MCP tools to respond to the user’s request according to their stated goals and scope. When beginning or resuming draft work, read [Start or resume](references/application.md#start-or-resume), select the project, and synchronize the draft. Read only the section for the current task:
 
 | Task | Instructions and purpose |
 | --- | --- |
