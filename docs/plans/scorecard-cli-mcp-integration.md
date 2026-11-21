@@ -1,6 +1,6 @@
 # Scorecard CLI and MCP integration plan
 
-Status: implemented locally on 2026-11-20 for proposed version `0.5.0-beta.1`; no publication requested. The approved plan below was recorded and reviewed on `codex/scorecard-cli-mcp-plan`, based on Badge Buddy commit `62d49824458051e6ffb0ed0c14ed27cdc5d4acd1`. Keep this branch local until the maintainer requests publication.
+Status: implemented locally on 2026-11-20 under proposed version `0.5.0-beta.1`; on 2026-11-21 the maintainer requested release as `0.5.0`, prepared on `codex/release-0.5.0`. The approved plan below was recorded and reviewed on `codex/scorecard-cli-mcp-plan`, based on Badge Buddy commit `62d49824458051e6ffb0ed0c14ed27cdc5d4acd1`. Historical evaluation records retain the version actually tested.
 
 Implementation includes the required Scorecard MCP registration, same-executable CLI guidance, capture-only `fetch --output`, retained offline evidence operations, and an independent verified-binary CI lane. See [Scorecard evaluations](../../tests/scorecard-skill-evals.md) for host and agent observations, including unsuccessful rehearsals and outstanding platform checks. The release acceptance checklist remains in [Releasing](../release/releasing.md#scorecard-integration-acceptance). The historical baseline and implementation gates below explain the decisions; they are not a claim that every platform or behavioral scenario has passed.
 

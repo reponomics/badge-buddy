@@ -4,7 +4,7 @@ Notable changes to Badge Buddy, newest first. Versions follow [Semantic Versioni
 
 ## [Unreleased]
 
-## [0.5.0-beta.1] - 2026-11-21
+## [0.5.0] - 2026-11-21
 
 ### Added
 
