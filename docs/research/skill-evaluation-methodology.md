@@ -1,6 +1,6 @@
 # Skill evaluation methodology research
 
-Research recorded 2026-11-20. This document separates observed repository practices, official product guidance, and proposed uses in Badge Buddy. No paid evaluations were run during this research. The Inspector checkout was inspected without installing or executing its project code. The new [Passing application evaluation plan](../plans/badge-application-evaluation.md) is planning only.
+Research recorded 2026-11-20. This document separates observed repository practices, official product guidance, and proposed uses in Badge Buddy. No paid evaluations were run during this research. The Inspector checkout was inspected without installing or executing its project code.
 
 ## Why Inspector is the primary methodological reference
 

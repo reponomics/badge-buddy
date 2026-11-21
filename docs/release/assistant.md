@@ -54,7 +54,7 @@ Use conventional commits and the existing PR template. Describe the final behavi
 
 Use the repository's Make targets and its `venv` tooling. For the Scorecard integration release, [the acceptance checklist](releasing.md#scorecard-integration-acceptance) requires `make check`, `make test-live`, `make test-scorecard`, and `make plugin-validate`, plus the separate Linux Scorecard CI lane. Run board/browser checks when affected or required by current CI. Confirm the selected Scorecard executable and MCP package rather than silently testing a development fork.
 
-Review [integration sessions](../../tests/release-integration.md) and their actual execution records. A manifest validator, tool contract, historical agent rehearsal, or green publishing workflow is not proof of a complete user workflow. Record any unrun release-relevant cases explicitly. Reuse valid evidence for unchanged content; rerun checks when changes or failures invalidate it.
+Review the available integration evidence privately with the user. A manifest validator, tool contract, historical agent rehearsal, or green publishing workflow is not proof of a complete user workflow. Record any unrun release-relevant cases explicitly. Reuse valid evidence for unchanged content; rerun checks when changes or failures invalidate it.
 
 Inspect current required checks, reviews, merge policy, and release environment configuration. Wait for the appropriate checks on the actual candidate. Do not disable a check because it fails on a private repository, waive a ruleset, or use an administrative bypass to manufacture readiness. If a policy exception is requested, explain the concrete failure and handle it as a distinct decision.
 
