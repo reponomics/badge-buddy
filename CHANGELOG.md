@@ -13,6 +13,7 @@ Planned plugin version: `0.5.0-beta.1`.
 
 ### Changed
 
+- Best Practices tool use follows the user’s stated goals and scope; draft synchronization is reserved for beginning or resuming draft work.
 - Scorecard guidance supports useful incremental improvements motivated by the user's score goals, investigates whether the measured scanner recognizes them, and distinguishes local validation, fresh scans, publication, and progress that depends on project history.
 
 ### Breaking changes
