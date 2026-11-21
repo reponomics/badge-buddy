@@ -68,9 +68,11 @@ The badge site can also import answers from a `.bestpractices.json` committed to
 
 Ask **“Explain my Scorecard findings”**, **“Set up a Scorecard badge”**, or **“Fix the unpinned actions reported by Scorecard.”** The [Scorecard skill](skills/ossf-scorecard/SKILL.md) reads published results, investigates findings, and helps implement improvements. It can configure the official Scorecard Action when you want to publish results. An existing public result may already support a badge without adding an Action.
 
-Scorecard work needs no local Scorecard installation or Best Practices registration. The API returns an existing published result; fetching it does not start a scan. After changes reach your remote repository, Claude checks for a newer published result before reporting an effect on the score. It reports any limits on coverage or comparison.
+Install the full [OpenSSF Scorecard executable](https://github.com/ossf/scorecard/releases/tag/v5.7.0) before using the integrated Scorecard workflow. Badge Buddy starts its `scorecard mcp` server for published-result queries and uses the same executable's CLI for fresh selected scans and supported local checks. Version **5.7.0** is the tested baseline; your installed binary is not automatically pinned or updated by the plugin. See [Scorecard setup](skills/ossf-scorecard/references/installation.md) for installation, absolute-path configuration, and connection troubleshooting. Best Practices and the other engineering skills do not require Scorecard.
 
-Implementation and publication guidance covers public GitHub repositories. The controller can also read existing GitLab API results, including subgroup repositories, and import upstream Scorecard JSON from a file or standard input. Those imports do not publish results. See the [publication guide](skills/ossf-scorecard/references/action-publication.md) and [diagnostic options](skills/ossf-scorecard/references/authentication-and-results.md#optional-upstream-cli-diagnostics).
+Published queries need no GitHub token and return existing measurements; they do not start scans. Fresh remote diagnostics may need credentials, while local mode runs supported file-based checks and cannot assess all remote settings or history. After changes reach your remote repository, Claude checks for a newer published result before reporting an effect on the badge. It distinguishes useful changes, likely detector recognition, and observed score changes, including progress that takes multiple reviewed changes or time to accumulate.
+
+Implementation and publication guidance covers public GitHub repositories. For historical comparisons, Claude queries published results by target commit or retrieves existing workflow reports and logs. See the [results guide](skills/ossf-scorecard/references/authentication-and-results.md) and [publication guide](skills/ossf-scorecard/references/action-publication.md). The tested MCP rejects GitLab subgroup paths.
 
 ## GitHub workflow maintenance
 
@@ -102,7 +104,7 @@ The [analyzer license guide](skills/static-analysis/references/licenses.md) list
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the setup, the checks, the coding standard, the test policy, and how changes are versioned. [Releasing](docs/release/releasing.md) is the maintainers' procedure, and [CHANGELOG.md](CHANGELOG.md) lists what changed in each version. [Governance](docs/governance.md) says who makes decisions and who has access, [SECURITY.md](SECURITY.md) says how to report a vulnerability, and participation follows the [code of conduct](CODE_OF_CONDUCT.md).
 
-The plugin's [`.mcp.json`](.mcp.json) registers the pinned MCP server. Project lookup, criteria, saved answers and progress, the draft, field checks, and proposal URLs are its tools; the [application guide](skills/ossf-bp-badges/references/application.md) describes how the skill uses them.
+The plugin's [`.mcp.json`](.mcp.json) registers Best Practices MCP at an exact package version and Scorecard through the user's installed executable. Project lookup, criteria, saved answers and progress, drafts, field checks, and proposal URLs belong to Best Practices MCP; the [application guide](skills/ossf-bp-badges/references/application.md) describes how the skill uses them.
 
 The board renderer reads a draft file, obtains the section's criteria from the server registered in `.mcp.json` with one `get_criteria` call over stdio, and never contacts BadgeApp:
 
@@ -114,8 +116,6 @@ venv/bin/python scripts/review_board.py \
 ```
 
 It reports a local HTML URL; add `--open` to open it directly. It supports all six badge sections. Run it again after the input changes. `--mcp-config` selects another configuration file, which the tests use to substitute a stand-in server.
-
-The Scorecard controller supports `fetch --repo owner/repo --output <path>`, `explain --input <path>`, and `diff --before <path> --after <path>`. It preserves published results and compares them without recomputing the upstream score.
 
 The bundled [BadgeApp questionnaire](assets/examples/badgeapp/README.md) is a dated worked example with provenance and licensing information. Its answers describe BadgeApp and are not copied into another project's assessment.
 

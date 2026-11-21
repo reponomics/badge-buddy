@@ -19,6 +19,7 @@ make check
 | Command | What it does |
 | --- | --- |
 | `make test-live` | Starts the pinned MCP package with `uvx`; checks documented tools and all board levels, then exercises draft and proposal contracts with synthetic HTTP responses and isolated storage |
+| `make test-scorecard` | Starts the separately installed, tested Scorecard executable; checks MCP tools against controlled REST responses and CLI scans against disposable local repositories. Set `SCORECARD=/absolute/path/to/scorecard` to select it |
 | `make plugin-validate` | Runs `claude plugin validate --strict` on the plugin and marketplace manifests |
 | `make check-board-browser` | Generates an offline mixed-answer fixture and checks navigation, responsive layout, refresh, revisions, and safe rendering in headless Chromium |
 
@@ -40,7 +41,7 @@ Tests for new functionality must be added to the automated test suite in the sam
 
 The suite must keep at least 80% statement coverage and 80% branch coverage of `scripts/` and `tools/`; `make check` enforces each floor separately using the unrounded counts in `coverage/coverage.json`. The combined percentage in the text report is informational. Each run erases old measurements, collects Python subprocess execution with coverage.py's subprocess patch, and combines the resulting data before reporting. This includes the board command exercised by CLI tests. Tests run offline: they use a stand-in MCP server and make no network requests. Checks that need the real server belong in `tests/live/`.
 
-Skill and reference documents are instructions for Claude, so unit tests alone cannot establish their behavior. When you change them, say in the pull request how you tried the change. The [badge workflow evaluations](tests/badge-skill-evals.md) and [engineering skill evaluations](tests/engineering-skill-evals.md) describe behavioral scenarios and distinguish recorded runs from untested expectations. The live contract suite uses the real pinned MCP package with controlled project responses; it does not write to BadgeApp or use your stored drafts.
+Skill and reference documents are instructions for Claude, so unit tests alone cannot establish their behavior. When you change them, say in the pull request how you tried the change. The [badge workflow evaluations](tests/badge-skill-evals.md), [Scorecard evaluations](tests/scorecard-skill-evals.md), and [engineering skill evaluations](tests/engineering-skill-evals.md) describe behavioral scenarios, not published benchmark results. Keep execution transcripts and development-run reports in ignored local storage; publication requires a separate maintainer review of privacy, methodology, and claims. The Best Practices live contract suite uses the real pinned MCP package with controlled project responses; it does not write to BadgeApp or use your stored drafts. The independent Scorecard suite uses a real executable and controlled data; ordinary offline tests do not need that binary.
 
 ## Versions and the changelog
 
@@ -48,9 +49,13 @@ The plugin uses [Semantic Versioning](https://semver.org/). Users receive a new 
 
 Describe each user-visible change under `Unreleased` in [CHANGELOG.md](CHANGELOG.md), written for someone deciding whether to upgrade.
 
-### Changing the MCP server version
+### Changing the Best Practices MCP server version
 
 The server version is pinned in two places that must agree: [.mcp.json](.mcp.json), which starts it, and [requirements-mcp.txt](requirements-mcp.txt), which dependency alerts and scans read. A pull request that changes the pin must also change the plugin version; CI checks both rules. Before raising the pin, read the server's [changelog](https://github.com/reponomics/best-practices-mcp/blob/main/CHANGELOG.md) and review the skill's tool list and the [application guide](skills/ossf-bp-badges/references/application.md) against it, then run `make test-live`.
+
+### Changing Scorecard integration or compatibility
+
+Scorecard is a user-installed Go executable, not a Python package in `requirements-mcp.txt`. The `pin-bump` CI guard above does not cover its compatibility policy or the skill's routing. A user-visible Scorecard change must explicitly include a plugin version bump and Unreleased changelog entry, including any new installation requirement or removed command. Changes folded into an unmerged release use that pending version and update its release notes; do not increment it again solely because its manifest already carries the target version. Review the selected upstream release, update the verified CI artifact and setup guidance together, run `make test-scorecard`, and record host and behavioral checks separately from tool-contract results. Follow the [release acceptance checklist](docs/release/releasing.md#scorecard-integration-acceptance) before tagging.
 
 ## Pull requests
 

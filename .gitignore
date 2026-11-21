@@ -135,3 +135,6 @@ temp/
 INTERNAL
 
 sync-from-*
+
+# Private development evaluation records
+/tests/evaluations/

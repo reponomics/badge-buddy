@@ -1,12 +1,10 @@
 # Scorecard remediation leads
 
-Use the result's reason, details, and version-specific upstream documentation to identify the problem before proposing an edit. These are practical investigation leads, not a scoring specification or a checklist to apply to every repository. Work within the selected scope and verify relevant local behavior; a later published scan establishes any score effect.
-
-Explain the concrete benefit, effort, and verification path. Distinguish risk reduction, maintenance improvements, and changes that only help a detector recognize an existing practice. Never substitute an unused tool, an empty test, or a false policy for an operating practice. Choose work for its relevance to the repository, not a projected numerical lift.
+Use these check-specific leads after selecting findings to investigate. Consult the measured scanner's documentation and detector source before proposing a change.
 
 ## Workflow permissions and dependency pins
 
-For `Token-Permissions`, action pinning within `Pinned-Dependencies`, and workflow dependency updates within `Dependency-Update-Tool`, use [GitHub workflow maintenance](../../github-workflow-maintenance/SKILL.md). Carry selected files and accepted scope into that procedure. Preserve required reads and put justified writes on the jobs that need them. Pinning and upgrading are distinct changes; integrate existing Dependabot or Renovate configuration rather than adding a redundant updater.
+For `Token-Permissions`, action pinning within `Pinned-Dependencies`, and workflow dependency updates within `Dependency-Update-Tool`, use the `badge-buddy:github-workflow-maintenance` skill with the selected findings and files.
 
 Investigate non-action dependencies separately when reported: container digests, installer verification, and application package updates need their own validation. Pinning every action alone does not establish that all dependency findings are resolved. Explain who will review and merge update proposals; configuring a bot does not establish ongoing maintenance.
 
@@ -39,6 +37,8 @@ A check's inability to read a setting is different from that setting being absen
 
 For `SAST`, choose a supported analyzer appropriate to the project's languages and existing CI, then verify it actually runs on the intended changes. For `Fuzzing`, exercise a real parser, decoder, or other untrusted-input boundary and demonstrate that the target runs meaningfully.
 
+For Python, inspect the Fuzzing detector at the measured version for supported Atheris patterns, language selection, and exclusions; the [v5.7.0 implementation](https://github.com/ossf/scorecard/blob/v5.7.0/checks/raw/fuzzing.go) is the tested baseline. The prose check documentation may lag the implementation. Local mode checks supported language patterns differently from remote language prominence, so follow local preflight with verification of the later remote result. Explain recognition gaps while preserving useful work.
+
 For `Vulnerabilities`, inspect the identified advisory and dependency path, implement a compatible fix, and test the affected behavior. If the project believes an advisory does not apply, document the concrete basis and consult the measured version's upstream suppression guidance. Never add an ignore solely to remove a reported finding. External advisory updates can affect the next scan independently of local changes.
 
 ## Packaging and releases
@@ -49,4 +49,4 @@ For `Packaging` and `Signed-Releases`, investigate the actual build, publication
 
 `Maintained` and `Contributors` reflect activity and contributor history. Explain the supported cause of a result; do not manufacture commits or affiliations to influence it. Other checks may depend on external services, token visibility, or repository history. Confirm those constraints in upstream documentation before attributing a result to a missing configuration file.
 
-For `CII-Best-Practices`, invoke `badge-buddy:ossf-bp-badges` (the [Best Practices entrypoint](../../ossf-bp-badges/SKILL.md)) to resolve its invocation context and support honest progress in the separate badge program. For publication or badge setup, follow [action-publication.md](action-publication.md) and verify the resulting API record.
+For history-dependent work, record the next real event or measurement needed. A configured review rule does not create a review history, and an open PR is not a merged change.

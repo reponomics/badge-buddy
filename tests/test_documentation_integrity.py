@@ -25,23 +25,16 @@ class DocumentationIntegrityTest(unittest.TestCase):
                 self.assertNotIn("<controller-path>", frontmatter)
                 self.assertNotIn("<scorecard-controller>", frontmatter)
 
-    def test_scorecard_documented_commands_parse(self) -> None:
-        # Parse the examples without executing commands or making requests.
-        scripts = str(PLUGIN_ROOT / "scripts")
-        sys.path.insert(0, scripts)
-        self.addCleanup(sys.path.remove, scripts)
-        import scorecard
-
-        parser = scorecard.build_parser()
-        examples = []
-        for path in sorted((SKILLS_ROOT / "ossf-scorecard").rglob("*.md")):
-            for line in path.read_text(encoding="utf-8").splitlines():
-                if line.startswith('"<scorecard-controller>" '):
-                    examples.append((path, line))
-        self.assertTrue(examples, "No Scorecard command examples found")
-        for path, line in examples:
-            with self.subTest(path=path.name, command=line):
-                parser.parse_args(shlex.split(line)[1:])
+    def test_scorecard_controller_and_callers_are_retired(self) -> None:
+        self.assertFalse((PLUGIN_ROOT / "scripts/scorecard.py").exists())
+        paths = [PLUGIN_ROOT / "README.md", PLUGIN_ROOT / ".mcp.json"]
+        paths.extend((SKILLS_ROOT / "ossf-scorecard").rglob("*.md"))
+        for path in paths:
+            with self.subTest(path=str(path.relative_to(PLUGIN_ROOT))):
+                text = path.read_text(encoding="utf-8")
+                self.assertNotIn("scripts/scorecard.py", text)
+                self.assertNotIn("<scorecard-controller>", text)
+                self.assertNotIn("explain --input", text)
 
     def test_registered_mcp_is_pinned_and_uses_stdio(self) -> None:
         config = json.loads((PLUGIN_ROOT / ".mcp.json").read_text())
@@ -57,6 +50,41 @@ class DocumentationIntegrityTest(unittest.TestCase):
         self.assertIn(requirement, listed)
         # Policy: drafts stay in the server's default location, shared with other hosts.
         self.assertNotIn("env", server)
+
+    def test_scorecard_registration_uses_one_overridable_executable(self) -> None:
+        config = json.loads((PLUGIN_ROOT / ".mcp.json").read_text())
+        server = config["mcpServers"]["scorecard"]
+        # Use the installed upstream binary directly; expansion is the host's
+        # supported command-field mechanism, not a shell or download wrapper.
+        self.assertEqual("${BADGE_BUDDY_SCORECARD_BIN:-scorecard}", server["command"])
+        self.assertEqual(["mcp"], server["args"])
+        self.assertNotIn("env", server)
+
+    def test_scorecard_permissions_name_only_the_supported_mcp_tools(self) -> None:
+        frontmatter = (
+            (SKILLS_ROOT / "ossf-scorecard/SKILL.md").read_text().split("---", 2)[1]
+        )
+        rules = next(
+            line.removeprefix("allowed-tools: ").split(", ")
+            for line in frontmatter.splitlines()
+            if line.startswith("allowed-tools:")
+        )
+        mcp_rules = {rule for rule in rules if rule.startswith("mcp__")}
+        expected = {
+            "get_repo_score",
+            "get_check_result",
+            "compare_repos",
+            "list_checks",
+            "explain_check",
+        }
+        self.assertEqual(
+            {f"mcp__plugin_badge-buddy_scorecard__{tool}" for tool in expected},
+            mcp_rules,
+        )
+        # A machine-specific CLI path must not require arbitrary Bash access.
+        shell_rules = {rule for rule in rules if rule.startswith("Bash")}
+        self.assertEqual(set(), shell_rules)
+        self.assertEqual(mcp_rules, set(rules))
 
     def test_board_documented_command_parses(self) -> None:
         scripts = str(PLUGIN_ROOT / "scripts")

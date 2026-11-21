@@ -4,6 +4,25 @@ Notable changes to Badge Buddy, newest first. Versions follow [Semantic Versioni
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-21
+
+### Added
+
+- Upstream Scorecard MCP for published results and check explanations, plus direct CLI workflows for fresh targeted scans and supported local checks. Both use the same user-installed executable; v5.7.0 is the tested compatibility baseline.
+- Scorecard connection and executable troubleshooting, evidence-preserving diagnostic guidance, and a separate real-binary contract suite with controlled API responses and disposable local repositories.
+
+### Changed
+
+- Best Practices tool use follows the user’s stated goals and scope; draft synchronization is reserved for beginning or resuming draft work.
+- Scorecard guidance focuses on workflow and measurement interpretation. Retrieve historical measurements through commit-specific MCP queries or existing GitHub Actions runs, with commands to inspect run summaries, fetch logs, and download report artifacts. Diagnostic commands preserve scan failure status.
+- Scorecard comparisons use existing measurement metadata and actual check coverage, distinguish missing and inconclusive results from zero, and keep observed changes separate from causal claims. Historical reports do not require a previously saved local baseline.
+- Scorecard guidance supports useful incremental improvements motivated by the user's score goals, investigates whether the measured scanner recognizes them, and distinguishes local validation, fresh scans, publication, and progress that depends on project history.
+
+### Breaking changes
+
+- The integrated Scorecard workflow now requires a locally installed Scorecard executable with its MCP subcommand. The plugin does not install it. Best Practices and the other engineering skills remain independently usable. Supplied Scorecard reports can still be inspected offline.
+- The bundled Scorecard controller and its `fetch`, `explain`, and `diff` commands have been removed. Published-result queries and comparisons now use upstream MCP or existing workflow reports, without plugin-managed snapshots or an import format. The tested MCP does not support GitLab subgroup paths, and the former controller workaround is no longer available.
+
 ## [0.4.0-beta.1] - 2026-11-19
 
 Badge Buddy now lives in its own repository and is its own plugin marketplace. Versions up to 0.3.0-beta.1 were published from the `reponomics/plugins` marketplace.

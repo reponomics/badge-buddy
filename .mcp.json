@@ -3,6 +3,10 @@
     "bestpractices": {
       "command": "uvx",
       "args": ["--from", "best-practices-mcp==0.7.0", "bestpractices-mcp"]
+    },
+    "scorecard": {
+      "command": "${BADGE_BUDDY_SCORECARD_BIN:-scorecard}",
+      "args": ["mcp"]
     }
   }
 }
