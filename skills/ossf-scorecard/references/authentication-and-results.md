@@ -1,63 +1,71 @@
-# Results, credentials, and CLI diagnostics
+# Find results and run diagnostics
 
-## Read published evidence through MCP
+## Find earlier measurements
 
-Use the upstream MCP for ordinary published overviews and selected-check findings. It reads existing REST records without credentials and does not start a scan. Its overview omits detailed findings, its single-check output can be truncated, and its provider selects fields from the original response. Do not reconstruct a supposedly lossless snapshot from these summaries. Missing checks, inconclusive scores, and truncation describe different limitations.
+For historical comparison, first retrieve the published overview at each target repository commit SHA through MCP, then relevant check details at those same commits. If those records are unavailable or insufficient, inspect the repository's existing workflow runs. Use the same run commands when investigating a failed scan or checking publication.
 
-Explain the supplied score without recalculating an aggregate. Details, documentation, or an overall score may be absent. Inspect reported file locations at the measured revision and check upstream documentation for that engine version. The installed MCP's explanation catalog describes its own build, which need not match an older result. Maintainer annotations are context, not proof that a finding was resolved.
+### Retrieve a workflow run and its logs
 
-## Save and inspect original evidence
-
-Resolve [the evidence controller](../../../scripts/scorecard.py) relative to this reference, then use its absolute path for `<scorecard-controller>` below. Replace the other placeholders and quote shell paths. It uses the Python standard library, reads supplied documents, and captures public records; it neither scans nor publishes.
-
-For an explicit original baseline, capture the upstream API document:
+For GitHub, use the host's connected tools or an authenticated GitHub CLI. Choose the Scorecard workflow filename from `.github/workflows/`, then list its runs. Replace `OWNER/REPO`, `WORKFLOW_FILE`, and the IDs below with actual values:
 
 ```bash
-"<scorecard-controller>" fetch --repo <owner/repo> --output <new-baseline-path>
+gh run list --repo OWNER/REPO --workflow WORKFLOW_FILE --limit 20
 ```
 
-`--output` is required. The response confirms the saved path and measurement/provenance identity; findings remain in the saved document. The snapshot preserves the original fields, including annotations and unknown fields, with acquisition provenance added. Preserve the baseline and use a new path for the next measurement, outside the repository unless requested otherwise. This is an evidence operation, not a backup for an unavailable MCP connection.
-
-Upstream v5.7.0 MCP does not accept GitLab subgroup paths. For that specific limitation, capture the original published record with `--repo gitlab.com/group/subgroup/project --output <path>`, then inspect the saved JSON. Do not assume GitHub Action publication applies to GitLab.
-
-Inspect supplied API snapshots or conventional upstream CLI JSON offline:
+Add `--commit TARGET_SHA` for a particular revision or `--created YYYY-MM-DD` to narrow the search. Inspect the selected run and its logs:
 
 ```bash
-"<scorecard-controller>" explain --input <path>
+gh run view RUN_ID --repo OWNER/REPO
+gh run view RUN_ID --repo OWNER/REPO --log
 ```
 
-Use `--input -` for stdin. Imported documents can lack provenance, version, details, or a usable commit. Keep those limits explicit. The controller accepts Scorecard JSON, not SARIF; inspect SARIF in the relevant code-scanning tooling or obtain a JSON report from the Action artifact.
-
-Compare original report files, never MCP summaries or controller interpretation output:
+For a large run, use a job ID from the summary to retrieve only that job's log:
 
 ```bash
-"<scorecard-controller>" diff --before <baseline-path> --after <new-result-path>
+gh run view RUN_ID --repo OWNER/REPO --job JOB_ID --log
 ```
 
-The controller retains useful per-check observations but withholds an aggregate delta when available evidence is incompatible. Read notes about repository, source, engine, check coverage, chronology, and inconclusive results. Even a permitted delta establishes structural comparability, not equal credentials or invocation conditions. A selected-check diagnostic and a full published run are different measurements. If scope/access context is unknown, say so.
+If the summary lists an uploaded report, prefer that artifact for structured comparison. Retrieve only the selected artifact into a temporary directory:
 
-## Acquisition failures
+```bash
+report_dir=$(mktemp -d) || exit 1
+gh run download RUN_ID --repo OWNER/REPO --name ARTIFACT_NAME --dir "$report_dir"
+```
 
-A missing public record has no score to interpret. Offer a fresh targeted diagnostic when it answers the question; discuss publication only when useful to the user's request. Correct invalid repository input before retrying. For rate limits, service failure, or network problems, report the cause and retry with bounded pacing. Do not change workflows or request a token for the unauthenticated public API. An unavailable MCP connection requires [connection diagnosis](installation.md), not a fallback query through the controller.
+Check the report's measured revision and date against the run metadata; the report establishes what was measured. Logs may omit or truncate results, and logs and artifacts are subject to retention. If useful older evidence is unavailable, say so and use what exists. Read existing reports with ordinary host tools.
+
+Command reference: [list runs](https://cli.github.com/manual/gh_run_list), [view runs and logs](https://cli.github.com/manual/gh_run_view), and [download artifacts](https://cli.github.com/manual/gh_run_download).
+
+## Compare measurements
+
+Identify each measurement's repository, target commit, date, scanner version/build, and source; link the measurements or workflow runs used. The target repository commit identifies measured code, while `scorecard.commit` identifies the scanner build. State any missing context in supplied reports.
+
+Compare actual check sets and conclusive coverage. `missing_checks` uses the running MCP server's catalog of expected non-experimental checks for the platform, not the historical scanner's catalog. `complete: true` means those names are present, not that every score is conclusive or every detail is returned. An incomplete result can still support comparison of checks present in both measurements.
+
+Missing, inconclusive (`-1`), and zero are distinct. A transition from `-1` to a numerical score is newly conclusive evidence. Explain per-check changes and reported aggregates where comparable, without recomputing an aggregate. Differences in scanner build, source, check scope, chronology, credentials, or invocation conditions limit comparison. Even measurements of the same commit can differ as settings or external data change; an observed score change alone does not establish its cause.
+
+## Unavailable results
+
+A not-found response means the API lacks the requested repository/commit record; an existing workflow report may still be available. For invalid input, correct the request. For rate limits or service failures, retry with bounded pacing. For a failed MCP connection, follow [installation troubleshooting](installation.md#check-the-connection). Published API queries require no GitHub token.
+
+Upstream v5.7.0 MCP rejects GitLab subgroup paths. Explain that limitation and inspect available evidence within the user's scope. Consult upstream platform support before proposing diagnostics or publication; the GitHub Action procedure applies to GitHub repositories.
 
 ## Action credentials
 
-Prefer the workflow's built-in `GITHUB_TOKEN`. Check [current Action authentication guidance](https://github.com/ossf/scorecard-action#authentication-with-fine-grained-pat-optional) when a specific finding lacks access. Classic branch-protection visibility can require additional credentials; repository rulesets can be read with the default token. Investigate the actual failure before broadening access.
+Prefer the workflow's built-in `GITHUB_TOKEN`. If a specific check lacks access, consult [upstream authentication guidance](https://github.com/ossf/scorecard-action#authentication-with-fine-grained-pat-optional) before broadening permissions. Classic branch-protection visibility can require additional credentials; repository rulesets can be read with the default token.
 
-If optional credentials are selected, follow the [upstream fine-grained token procedure](https://github.com/ossf/scorecard-action/blob/main/docs/authentication/fine-grained-auth-token.md), limiting access to the required repository and operation. Have the user supply secrets through their environment or repository secret manager, never in chat or committed files. Confirm any organization approval and expiration requirements. Read [action-publication.md](action-publication.md) before changing publication permissions or verifying publication.
-
-Before adopting an optional token, explain its upkeep and carry the accepted responsibility into the handoff: who will renew or replace it, its actual expiry or replacement trigger, and which named secret they must update. Explain which checks or workflow depend on it and may lose access or fail when it expires. Verify the next run after replacement. Do not invent a rotation schedule or assign manual renewal work for the built-in `GITHUB_TOKEN`.
+For an optional token, follow the [fine-grained token procedure](https://github.com/ossf/scorecard-action/blob/main/docs/authentication/fine-grained-auth-token.md), restrict access to the required repository and operation, and use the repository secret manager. Confirm organization approval, expiry, who will replace the token, and which secret and checks depend on it. Verify the next run after replacement. The built-in token needs no manual renewal plan.
 
 ## CLI diagnostics
 
-The CLI is a supported execution path through the same required binary as the MCP. Before its first use, follow [installation and executable selection](installation.md). Resolve `<scorecard-executable>` to that selected absolute path, including any override used by the host. Use the current upstream [CLI guidance](https://github.com/ossf/scorecard/tree/v5.7.0#scorecard-command-line-interface) and that build's `--help` when a flag or platform is uncertain.
+Run a fresh diagnostic when the user requests one or when current findings are needed to validate selected work. This requires the [installed executable selected for MCP](installation.md#select-one-executable-for-both-interfaces). Replace `<scorecard-executable>` below with its absolute path; consult its `--help` and [upstream CLI guidance](https://github.com/ossf/scorecard/tree/v5.7.0#scorecard-command-line-interface) for supported flags and platforms.
 
 Select checks for the question. A targeted remote diagnostic might be:
 
 ```bash
 diagnostic_dir=$(mktemp -d) || exit 1
-"<scorecard-executable>" --repo=github.com/OWNER/REPO --checks=Pinned-Dependencies --show-details --show-annotations --format=json --output "$diagnostic_dir/remote.json"
-scan_status=$?
+scan_status=0
+"<scorecard-executable>" --repo=github.com/OWNER/REPO --checks=Pinned-Dependencies --show-details --show-annotations --format=json --output "$diagnostic_dir/remote.json" || scan_status=$?
 printf 'Scorecard exit status: %s\nReport path: %s\n' "$scan_status" "$diagnostic_dir/remote.json"
 ```
 
@@ -65,17 +73,15 @@ A supported local file preflight might be:
 
 ```bash
 diagnostic_dir=$(mktemp -d) || exit 1
-"<scorecard-executable>" --local="/absolute/path/to/project" --checks=Fuzzing --show-details --show-annotations --format=json --output "$diagnostic_dir/local.json"
-scan_status=$?
+scan_status=0
+"<scorecard-executable>" --local="/absolute/path/to/project" --checks=Fuzzing --show-details --show-annotations --format=json --output "$diagnostic_dir/local.json" || scan_status=$?
 printf 'Scorecard exit status: %s\nReport path: %s\n' "$scan_status" "$diagnostic_dir/local.json"
 ```
 
-Replace the repository, project path, and checks for the task. Run each example in one shell invocation so the captured exit status and path are printed before temporary shell variables disappear. These illustrate separate runs; inspect the first before starting another. A newly created directory prevents a stale report from masquerading as fresh output. Save stderr and the printed exit status when diagnosing a failure. Do not chain output inspection behind `&&`, since a failed scan can still emit useful JSON. Add `--verbosity=debug` when the investigation needs findings filtered at the default detail level.
+Replace the repository, project path, and checks for the task, and run each example in one shell invocation. Each new directory prevents reuse of stale output; the failure clause captures the exit status even under `set -e`. Inspect that status, stderr, and the new report together. A failed scan can still provide useful partial findings. Missing or malformed output is a failed measurement, and a zero exit still needs inspection for absent or inconclusive checks. Add `--verbosity=debug` when needed to include findings filtered at the default detail level.
 
-After each run, inspect the exit status and the newly produced file together. A nonzero exit with valid JSON can supply partial findings: preserve them, identify failed/inconclusive checks, and report the run as incomplete. A nonzero exit with absent or malformed output is a failed measurement, not a new score. A zero exit also needs inspection for skipped/absent checks and inconclusive evidence. Use `explain --input` only after validating the report is newly produced and usable.
+For remote GitHub or GitLab diagnostics, configure [upstream-supported authentication](https://github.com/ossf/scorecard/tree/v5.7.0#authentication): token environment variables or GitHub App configuration where applicable. Diagnose access errors from the actual command and check output. Supply secrets through the environment or secret manager, never in chat or committed files. Local mode does not require a repository token, though some checks use external data.
 
-For remote repositories, v5.7.0 requires suitable credentials in the environment: use upstream-supported GitHub or GitLab token configuration and diagnose the specific access gap. Keep secrets out of chat, command arguments, saved reports, and committed files. The local mode does not require a repository token, but local analysis can still use external data; it is not a general offline guarantee. Do not create a publishing workflow just to run a diagnostic.
+When explaining the result, include the nonsecret command, executable build, target/check scope, local or remote mode, and relevant access limits. These conditions matter when [comparing measurements](#compare-measurements).
 
-Record the output path, exact nonsecret command, selected executable version/build, target/check scope, mode (local or remote diagnostic), result commit/date, and relevant credential access limitations in the handoff or an existing work log. Do not create a new storage subsystem. Bare CLI reports enter the controller as generic imports; they do not capture every invocation condition.
-
-Local mode runs supported file checks and skips host settings/history checks. It can inspect uncommitted files; its result is not remote verification. Fuzzing's local language selection differs from remote language prominence, so a detected local target does not promise remote recognition. A fresh remote CLI scan does not publish to the public API. Verify public badge changes through a later published record as described in [action-publication.md](action-publication.md).
+Local mode selects checks marked as supporting file-based requests. Default selection filters out unsupported checks; explicitly naming one with `--checks` returns an error under the [v5.7.0 selection policy](https://github.com/ossf/scorecard/blob/v5.7.0/policy/policy.go). It can inspect uncommitted files; its result is not remote verification. A fresh remote CLI scan does not publish to the public API. Verify public badge changes through a later published record as described in [action-publication.md](action-publication.md).

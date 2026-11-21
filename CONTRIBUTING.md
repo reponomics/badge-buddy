@@ -55,7 +55,7 @@ The server version is pinned in two places that must agree: [.mcp.json](.mcp.jso
 
 ### Changing Scorecard integration or compatibility
 
-Scorecard is a user-installed Go executable, not a Python package in `requirements-mcp.txt`. The `pin-bump` CI guard above does not cover its compatibility policy or the skill's routing. A user-visible Scorecard change must explicitly include a plugin version bump and Unreleased changelog entry, including any new installation requirement or changed helper command. Review the selected upstream release, update the verified CI artifact and setup guidance together, run `make test-scorecard`, and record host and behavioral checks separately from tool-contract results. Follow the [release acceptance checklist](docs/release/releasing.md#scorecard-integration-acceptance) before tagging.
+Scorecard is a user-installed Go executable, not a Python package in `requirements-mcp.txt`. The `pin-bump` CI guard above does not cover its compatibility policy or the skill's routing. A user-visible Scorecard change must explicitly include a plugin version bump and Unreleased changelog entry, including any new installation requirement or removed command. Changes folded into an unmerged release use that pending version and update its release notes; do not increment it again solely because its manifest already carries the target version. Review the selected upstream release, update the verified CI artifact and setup guidance together, run `make test-scorecard`, and record host and behavioral checks separately from tool-contract results. Follow the [release acceptance checklist](docs/release/releasing.md#scorecard-integration-acceptance) before tagging.
 
 ## Pull requests
 

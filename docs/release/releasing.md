@@ -46,11 +46,12 @@ Merging the version PR does not publish a GitHub release; pushing the tag trigge
 
 Before releasing the CLI/MCP integration or changing its compatibility baseline:
 
-- Verify that the plugin version advances and the changelog describes the required executable, any command changes, and compatibility policy. `tools/release_check.py pin-bump` watches the Best Practices package only; it does not enforce these Scorecard changes.
+- Verify that the plugin version advances from the published release and the changelog describes the required executable, any command changes, and compatibility policy. Amend an existing pending release under its selected version rather than adding another version bump. `tools/release_check.py pin-bump` watches the Best Practices package only; it does not enforce these Scorecard changes.
 - Run `make check`, `make test-live`, `make test-scorecard`, and `make plugin-validate`. Confirm the separate Scorecard CI job passes with its checksum-verified release binary; a local macOS run does not establish the Linux CI result.
 - Exercise the [Scorecard evaluation scenarios](../../tests/scorecard-skill-evals.md) for installation, executable identity, missing dependency, connection, and skill routing. Review local execution evidence with the maintainer. Treat unrun cases or failed measurements explicitly when deciding release readiness.
+- Exercise current-status and selected-detail requests, commit-specific historical comparison, existing workflow JSON/log alternatives, supplied partial JSON, unavailable historical evidence, differing scanner/check coverage, and optional requested saving. Ordinary queries and comparisons must not automatically save reports. Check catalog-relative completeness, inconclusive scores, and workflow/public badge distinctions.
 - Review integration coverage for the final candidate, including application/review, Scorecard diagnosis, recovery, and cross-skill behavior. Keep execution records private and identify any release-relevant gaps.
-- Inspect the release commit's file inventory: `.mcp.json`, the skill and every linked reference, and `scripts/scorecard.py` must be included. The current release uses the repository snapshot; there is no separate generated plugin bundle. Never ship a developer's executable, credentials, or temporary evaluation state.
+- Inspect the release commit's file inventory: `.mcp.json`, the skill and every linked reference must be included; the retired Scorecard controller and its command permissions must be absent. The current release uses the repository snapshot; there is no separate generated plugin bundle. Never ship a developer's executable, credentials, or temporary evaluation state.
 
 The manifest version can identify a pending release while its notes remain under `Unreleased`; move those notes to a dated version heading as part of the release pull request before tagging.
 

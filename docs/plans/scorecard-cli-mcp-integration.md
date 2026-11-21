@@ -1,8 +1,64 @@
 # Scorecard CLI and MCP integration plan
 
+## Amendment: agent-guided verification without snapshot management (2026-11-21)
+
+Status: implemented for the pending v0.5.0 release. The controller has been removed and active guidance follows the MCP/CLI and ordinary-host procedures below. Deterministic contracts and attended behavioral smoke tests remain distinct release checks; see the [release acceptance checklist](../release/releasing.md#scorecard-integration-acceptance). This amendment supersedes the snapshot retention, controller parity, mandatory report saving, and offline controller requirements in the historical plan below, including the corresponding validation gates. It does not change the release version or authorize publication.
+
+### Decision
+
+The Scorecard evidence controller (`scripts/scorecard.py`) and its `fetch`, `explain`, and `diff` entry points are retired. Do not retain a backup query path or replace it with another storage/comparison wrapper. The skill should describe procedures that an agent can follow using upstream MCP tools, direct Scorecard CLI diagnostics, and ordinary host tools. Reading user-supplied JSON and comparing historical measurements remain supported activities; neither requires a plugin-owned persistence mechanism.
+
+Saving a report is optional. When requested, the agent can save upstream JSON to a user-chosen destination using the host's ordinary tools and permissions. Do not require a baseline file, storage directory, filesystem grant, or automatic archive as a prerequisite for Scorecard assistance. Temporary output needed for a particular CLI invocation is an implementation detail, not a durable snapshot workflow. Do not automatically save every result.
+
+### Procedure to teach
+
+1. Follow the user's question and scope. Use the upstream overview, then request details only for relevant checks; consult truncation metadata and increase `max_details` within its supported limit when needed. Use the CLI for requested fresh diagnostics or supported local checks.
+2. Investigate the relevant scanner version's recognition rules and propose or implement the selected change within the user's authorization. The verification objective is whether Scorecard recognizes the change; a separate assessment of the practice's broader effectiveness is not a prerequisite.
+3. After the relevant merge and subsequent measurement, inspect the new result. For historical comparisons, query MCP with each target repository commit SHA where published measurements are available, then request selected-check details as needed. This route requires neither GitHub access nor full-report export. If MCP evidence is unavailable or insufficient, inspect a previous workflow report using ordinary host tools: prefer an uploaded JSON report when available, then logs that contain useful results. Logs may omit or truncate the report, and neither source guarantees all checks ran. User-supplied evidence remains usable. Do not add a GitHub client or credential store to the Scorecard MCP for this purpose.
+4. Identify the repository, measured commit/date, scanner build, check coverage, and source of each result. Explain per-check changes and reported overall scores where comparable. Preserve the distinction between zero, absent, and inconclusive results. Do not recompute an aggregate or treat a selected diagnostic as a full published measurement.
+5. Link the measurements used. If older evidence is unavailable or the log does not contain a report, say so and use available evidence; do not invent a baseline or require the user to have saved one earlier. Save JSON only when requested or otherwise authorized for the task.
+
+A successful workflow and a changed public API result are separate observations. When the question concerns a badge update, verify the published measurement as well. Historical logs are subject to retention, and report content varies by workflow; neither limitation makes persistent plugin-managed snapshots a default requirement.
+
+### Use existing MCP measurement metadata
+
+The existing MCP result already supplies the measurement context needed for agent-guided comparison: `repo`, target repository `commit`, measurement `date`, `scorecard.version` and `scorecard.commit`, `source`, reported `score`, per-check scores/reasons, `caveats`, `missing_checks`, and `complete`. Use those fields directly; do not introduce a plugin metadata format, provenance sidecar, or an MCP feature solely to reproduce them. The target repository commit and the scanner build commit identify different things and must not be confused.
+
+`missing_checks` is calculated from the catalog bundled with the running MCP server: it lists expected non-experimental checks for the repository platform absent from the result. It does not reconstruct the historical scanner's catalog. `complete: true` means those expected check names are present, not that all scores are conclusive or every detail is returned. Compare the actual check sets and scores as well as metadata; an incomplete result can still support comparison of individual checks present in both measurements. Missing and inconclusive results are not zero. A transition from `-1` to a numerical score is newly conclusive evidence, not a numerical gain from `-1`. Explain material differences in scanner build, source, coverage, and measurement conditions. Distinguish an observed change from a claim that a particular edit caused it; no custom comparison engine is required.
+
+Complete raw-report retrieval is a separate question about omitted detail, annotations, or original fields; it is not needed to obtain the measurement identity and completeness metadata above. Existing metadata support strengthens the case for removing the custom snapshot layer.
+
+### Upstream design context
+
+The following decisions were verified in upstream's `v5.7.0` history, separately from fork additions. Read them before changing tool boundaries; compact output is intentional, not evidence of an unfinished full-report interface.
+
+- [Original design, D4 and D5](https://github.com/ossf/scorecard/blob/v5.7.0/openspec/changes/archive/2026-08-04-add-scorecard-mcp-server/design.md): commit-specific retrieval and measurement metadata support downstream historical reuse; consumer caching belongs to the consumer. The five-tool interface deliberately offers compact overviews followed by selected-check detail to manage context size.
+- [Design audit and authoritative resolutions](https://github.com/ossf/scorecard/blob/v5.7.0/docs/design/mcp-design-audit.md#resolutions): F7 rejected `details:false` because it conflicts with the detail tool's purpose. It chose `max_details` (default 50, cap 500) with `details_total` and `details_truncated`, informed by live samples reaching 377 entries. Truncation is applied in the handler, not the provider. Increase the supported detail limit when useful before seeking another evidence source.
+- [Integration review fixes](https://github.com/ossf/scorecard/blob/v5.7.0/openspec/changes/add-mcp-subcommand/tasks.md#4-review-fixes): missing-check calculation, provenance, completeness, and attribution were explicitly reviewed. Reuse them rather than introducing parallel metadata.
+- The audit's D1 resolution deliberately selected stdio and in-tree distribution; Directory submission was not a current goal. The transport-independent factory and [published roadmap](https://github.com/ossf/scorecard/blob/v5.7.0/docs/mcp.md#roadmap) allow HTTP as an independent extension. Live scanning was deferred for separate decisions on authentication, lifetime, progress/cancellation, and tool surface.
+
+The audit records source and SDK inspection, real stdio probes, live API calls, and decisions resolved individually. This is documented project rationale, not a claim that this amendment independently repeated that validation. Future proposals should identify a concrete unmet task and explain why existing tools and ordinary client procedures do not suffice.
+
+### Implementation and acceptance
+
+- Remove the controller, its skill permissions, command examples, and tests that exist solely to preserve its interfaces. Update callers, README, references, packaging, and test/build configuration as necessary. Keep meaningful upstream MCP/CLI contract coverage and review remaining coverage requirements after deleting obsolete code.
+- Replace controller-based inspection in live-CLI tests with direct assertions against upstream JSON. Preserve coverage for useful partial output after a nonzero exit, missing or malformed output, and stale-result avoidance; remove tests only when they solely enforce the retired controller interface.
+- Replace snapshot-first skill instructions with the procedure above. Inspect supplied JSON directly with ordinary host capabilities; there is no plugin-specific import format or required provenance sidecar.
+- Remove the controller-based GitLab subgroup workaround. State the upstream MCP limitation and allow ordinary investigation of available published evidence within the user's scope; do not promise identical platform support or silently substitute a second backend.
+- Verify a current-status request, a selected-check investigation, commit-specific MCP comparison, historical workflow-report comparison when MCP evidence is unavailable or insufficient, supplied JSON, an unavailable baseline, differing scanner/check coverage, and an optional user-requested save. Verify that ordinary queries and comparisons do not automatically write reports. Keep execution records private under repository guidance.
+- Keep the installed CLI and upstream MCP integration, direct diagnostic support, partial-result handling, and publication procedures. No Best Practices draft-storage changes are included.
+
+### Review and implementation handoff
+
+A separate review supplied on 2026-11-21 recommended proceeding with these clarifications. It covered plans and relevant implementation, not runtime testing. Its findings are incorporated above: overview/detail routing, commit-specific historical queries, workflow-report alternatives, comparison safeguards, catalog-relative completeness, and preservation of meaningful CLI tests. The accompanying fork amendment addresses the residual snapshot-based HTTP request-size rationale and independent contribution scopes.
+
+Before editing, inspect the current branch and worktree; this amendment is not evidence that the release branch remains at its historical state. Audit all controller callers, permissions, mandatory-save instructions, and helper-dependent tests. Implement the plugin cleanup as a focused changeset, run appropriate remaining checks, and report actual validation. Do not publish transcripts or treat this design review as runtime acceptance. This is a Scorecard change only; Best Practices persistence is outside scope.
+
+## Historical plan and implementation record
+
 Status: implemented locally on 2026-11-20 under proposed version `0.5.0-beta.1`; on 2026-11-21 the maintainer requested release as `0.5.0`, prepared on `codex/release-0.5.0`. The approved plan below was recorded and reviewed on `codex/scorecard-cli-mcp-plan`, based on Badge Buddy commit `62d49824458051e6ffb0ed0c14ed27cdc5d4acd1`. Historical evaluation records retain the version actually tested.
 
-Implementation includes the required Scorecard MCP registration, same-executable CLI guidance, capture-only `fetch --output`, retained offline evidence operations, and an independent verified-binary CI lane. See [Scorecard evaluations](../../tests/scorecard-skill-evals.md) for host and agent observations, including unsuccessful rehearsals and outstanding platform checks. The release acceptance checklist remains in [Releasing](../release/releasing.md#scorecard-integration-acceptance). The historical baseline and implementation gates below explain the decisions; they are not a claim that every platform or behavioral scenario has passed.
+The initial implementation included the required Scorecard MCP registration, same-executable CLI guidance, capture-only `fetch --output`, retained offline evidence operations, and an independent verified-binary CI lane. The amendment above supersedes its controller and persistence requirements; the material below is historical context, not active plugin guidance. See [Scorecard evaluation scenarios](../../tests/scorecard-skill-evals.md) for the behavioral and host checks; execution records remain private. The release acceptance checklist remains in [Releasing](../release/releasing.md#scorecard-integration-acceptance). The historical baseline and implementation gates below explain the decisions; they are not a claim that every platform or behavioral scenario has passed.
 
 Related private planning lives in the sibling Scorecard fork on `badge-buddy-integration`, under `planning/badge-buddy/` (initial planning commit `5d418dfb`). That work covers the hosted service, provider research, and upstream contributions. This document is the implementation plan for the Badge Buddy side and must remain usable without that checkout.
 
@@ -19,10 +75,10 @@ Do not maintain redundant script implementations as connection-failure backups. 
 ## Pre-integration baseline
 
 - [.mcp.json](../../.mcp.json) starts only `bestpractices`, using `best-practices-mcp==0.7.0` through `uvx`.
-- [The Scorecard skill](../../skills/ossf-scorecard/SKILL.md) uses [scripts/scorecard.py](../../scripts/scorecard.py) for `fetch`, `explain`, and `diff`. Its tool permissions reference that controller. It explicitly says the plugin does not install or orchestrate Scorecard binaries.
+- [The Scorecard skill](../../skills/ossf-scorecard/SKILL.md) uses `scripts/scorecard.py` (now removed) for `fetch`, `explain`, and `diff`. Its tool permissions reference that controller. It explicitly says the plugin does not install or orchestrate Scorecard binaries.
 - The controller reads public API results without credentials, imports upstream JSON, saves original documents with acquisition provenance, and compares snapshots conservatively. It does not scan repositories.
 - [Authentication and results guidance](../../skills/ossf-scorecard/references/authentication-and-results.md) treats CLI diagnostics as an already established user workflow. [Publication guidance](../../skills/ossf-scorecard/references/action-publication.md) distinguishes diagnostics from public results.
-- [Controller tests](../../tests/test_scorecard.py), [documentation integrity tests](../../tests/test_documentation_integrity.py), [engineering evaluations](../../tests/engineering-skill-evals.md), README text, and CI checks encode aspects of this behavior.
+- Controller tests (`tests/test_scorecard.py`, now removed), [documentation integrity tests](../../tests/test_documentation_integrity.py), [engineering evaluations](../../tests/engineering-skill-evals.md), README text, and CI checks encode aspects of this behavior.
 
 ## Upstream baseline and boundaries
 

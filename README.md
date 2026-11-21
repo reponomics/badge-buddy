@@ -70,9 +70,9 @@ Ask **“Explain my Scorecard findings”**, **“Set up a Scorecard badge”**,
 
 Install the full [OpenSSF Scorecard executable](https://github.com/ossf/scorecard/releases/tag/v5.7.0) before using the integrated Scorecard workflow. Badge Buddy starts its `scorecard mcp` server for published-result queries and uses the same executable's CLI for fresh selected scans and supported local checks. Version **5.7.0** is the tested baseline; your installed binary is not automatically pinned or updated by the plugin. See [Scorecard setup](skills/ossf-scorecard/references/installation.md) for installation, absolute-path configuration, and connection troubleshooting. Best Practices and the other engineering skills do not require Scorecard.
 
-Published queries need no GitHub token and return existing measurements; they do not start scans. Fresh remote diagnostics may need credentials, while local checks examine only supported files and cannot assess all remote settings or history. After changes reach your remote repository, Claude checks for a newer published result before reporting an effect on the badge. It distinguishes useful changes, likely detector recognition, and observed score changes, including progress that takes multiple reviewed changes or time to accumulate.
+Published queries need no GitHub token and return existing measurements; they do not start scans. Fresh remote diagnostics may need credentials, while local mode runs supported file-based checks and cannot assess all remote settings or history. After changes reach your remote repository, Claude checks for a newer published result before reporting an effect on the badge. It distinguishes useful changes, likely detector recognition, and observed score changes, including progress that takes multiple reviewed changes or time to accumulate.
 
-Implementation and publication guidance covers public GitHub repositories. Supplied JSON can still be inspected and compared offline. Original published snapshots retain upstream fields that MCP summaries omit; GitLab subgroup records remain accessible through explicit snapshot capture and import because the tested MCP rejects subgroup paths. These operations do not publish results or substitute for a broken MCP connection. See the [publication guide](skills/ossf-scorecard/references/action-publication.md) and [evidence and diagnostics guide](skills/ossf-scorecard/references/authentication-and-results.md).
+Implementation and publication guidance covers public GitHub repositories. For historical comparisons, Claude queries published results by target commit or retrieves existing workflow reports and logs. See the [results guide](skills/ossf-scorecard/references/authentication-and-results.md) and [publication guide](skills/ossf-scorecard/references/action-publication.md). The tested MCP rejects GitLab subgroup paths.
 
 ## GitHub workflow maintenance
 
@@ -116,8 +116,6 @@ venv/bin/python scripts/review_board.py \
 ```
 
 It reports a local HTML URL; add `--open` to open it directly. It supports all six badge sections. Run it again after the input changes. `--mcp-config` selects another configuration file, which the tests use to substitute a stand-in server.
-
-The Scorecard controller supports `fetch --repo owner/repo --output <path>`, `explain --input <path>`, and `diff --before <path> --after <path>`. Capture requires an output path and reports where the original evidence was saved; it is not a second live-query interface. Saved reports preserve upstream fields and annotations. Offline inspection and comparison do not recompute the upstream score.
 
 The bundled [BadgeApp questionnaire](assets/examples/badgeapp/README.md) is a dated worked example with provenance and licensing information. Its answers describe BadgeApp and are not copied into another project's assessment.
 
