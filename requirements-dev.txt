@@ -1,4 +1,4 @@
 # Maintainer tooling only; the installed plugin uses the Python standard library.
 PyYAML==6.0.3
-coverage==7.17.3
+coverage==7.17.5
 ruff==0.17.5
